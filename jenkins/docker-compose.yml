@@ -1,4 +1,5 @@
-services:
+
+#services:
   jenkins-docker:
     image: docker:dind
     container_name: jenkins-docker
@@ -34,10 +35,28 @@ services:
     networks:
       - jenkins
 
-networks:
+#networks:
   jenkins:
     driver: bridge
 
-volumes:
+#volumes:
   jenkins-docker-certs:
   jenkins-data:
+
+version: "3"
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    privileged: true
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # 👈 IMPORTANT
+      - /usr/bin/docker:/usr/bin/docker            # 👈 Provides docker CLI
+
+volumes:
+  jenkins_home:
