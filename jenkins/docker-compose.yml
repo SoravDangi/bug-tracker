@@ -1,8 +1,7 @@
-version: "3"
-
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    image: jenkins/jenkins:lts-docker
+    container_name: my-jenkins
     privileged: true
     user: root
     ports:
@@ -10,8 +9,8 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock  # 👈 IMPORTANT
-      - /usr/bin/docker:/usr/bin/docker            # 👈 Provides docker CLI
-
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
 volumes:
   jenkins_home:
+
