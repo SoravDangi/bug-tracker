@@ -17,7 +17,7 @@ services:
     command: --storage-driver overlay2
 
   my-jenkins:
-    image: my-jenkins
+    image: jenkins/jenkins:lts
     container_name: my-jenkins
     restart: on-failure
     environment:
