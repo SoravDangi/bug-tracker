@@ -28,7 +28,6 @@ pipeline {
                                     go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
                                     go test -coverprofile=coverage.out -covermode=atomic ./...
-
                                     go tool cover -html=coverage.out -o coverage.html
 
                                     mkdir -p reports
@@ -41,11 +40,14 @@ pipeline {
                     post {
                         always {
                             junit 'bugtracker-backend/test-results.xml'
-                            publishHTML(target: [
-                                reportDir: 'bugtracker-backend/reports',
-                                reportFiles: 'coverage.html',
-                                reportName: 'Backend Coverage Report'
-                            ])
+
+                            publishHTML(
+                                target: [
+                                    reportDir: 'bugtracker-backend/reports',
+                                    reportFiles: 'coverage.html',
+                                    reportName: 'Backend Coverage Report'
+                                ]
+                            )
                         }
                     }
                 }
@@ -73,11 +75,13 @@ pipeline {
                     post {
                         always {
                             junit 'bugtracker-frontend/test-results.xml'
-                            publishHTML(target: [
-                                reportDir: 'bugtracker-frontend/reports/coverage',
-                                reportFiles: 'index.html',
-                                reportName: 'Frontend Coverage Report'
-                            ])
+                            publishHTML(
+                                target: [
+                                    reportDir: 'bugtracker-frontend/reports/coverage',
+                                    reportFiles: 'index.html',
+                                    reportName: 'Frontend Coverage Report'
+                                ]
+                            )
                         }
                     }
                 }
@@ -106,6 +110,7 @@ pipeline {
                     args '-u 0 --network=host'
                 }
             }
+
             steps {
                 dir('tests-api') {
 
@@ -114,6 +119,19 @@ pipeline {
 
                     sh 'npm ci'
                     sh 'npx playwright test'
+                }
+            }
+
+            post {
+                always {
+                    junit 'tests-api/test-results/results.xml'
+                    publishHTML(
+                        target: [
+                            reportDir: 'tests-api/playwright-report',
+                            reportFiles: 'index.html',
+                            reportName: 'Playwright API Test Report'
+                        ]
+                    )
                 }
             }
         }
