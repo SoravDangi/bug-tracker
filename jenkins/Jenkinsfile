@@ -23,6 +23,13 @@ pipeline {
 
                             go mod download
                             go test -v ./... 2>&1 | go-junit-report > test-results.xml
+
+                            # generate coverage report 
+                            go test -coverprofile=coverge.out -covermode=atomic ./...
+                            go tool cover -html=coverage.out -o coverage.html
+
+                            mkdir -p reports
+                            mv coverage.html reports/
                         '''
                     }
                 }
@@ -30,6 +37,11 @@ pipeline {
             post {
                 always {
                     junit 'bugtracker-backend/test-results.xml'
+                    publishHTML targets : {
+                        reportDir: 'bugtracker-backend/reports'.
+                        reportFiles: 'coverage.html',
+                        reportName: 'Backend Coverage Report'
+                    }
                 }
             }
         }
@@ -53,6 +65,7 @@ pipeline {
             post {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
+
                 }
             }
         }
