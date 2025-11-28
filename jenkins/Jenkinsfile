@@ -25,7 +25,7 @@ pipeline {
                             go mod download
                             go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-                            # Generate coverage (FIXED FILE NAME)
+                            # Generate coverage
                             go test -coverprofile=coverage.out -covermode=atomic ./...
 
                             # Convert to HTML
@@ -64,6 +64,8 @@ pipeline {
                     sh '''
                         npm ci
                         npm test -- --json --outputFile=test-results.json
+
+                        # Move coverage report (jest creates folder named "coverage")
                         mkdir -p reports
                         mv coverage reports/
                     '''
@@ -73,11 +75,12 @@ pipeline {
             post {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
-                    publishHTML target: {
+
+                    publishHTML(target: [
                         reportDir: 'bugtracker-frontend/reports/coverage',
                         reportFiles: 'index.html',
-                        reportNmae: 'Frontend Coverage Report'
-                    }
+                        reportName: 'Frontend Coverage Report'
+                    ])
                 }
             }
         }
