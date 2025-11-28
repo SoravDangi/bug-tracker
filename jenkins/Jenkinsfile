@@ -92,5 +92,9 @@ pipeline {
         } // end stage Execute Unit Tests
 
     } // end stages
-
+    post{
+        always{
+            cleanWs()
+        }
+    }
 } // end pipeline
