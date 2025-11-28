@@ -6,13 +6,13 @@ pipeline {
         stage('Unit Tests - Backend') {
             steps {
                 git url: 'https://github.com/SoravDangi/bug-tracker.git', branch: 'main'
+
                 script {
                     echo "Running Go unit tests..."
 
-                    // Run tests inside Docker container
                     sh """
                         docker run --rm \
-                        -v \$PWD/bugtracker-backend:/app \
+                        -v ${env.WORKSPACE}/bugtracker-backend:/app \
                         -w /app \
                         snakee/golang-junit:1.21 \
                         go test ./... -v
@@ -20,7 +20,5 @@ pipeline {
                 }
             }
         }
-
     }
-
 }
