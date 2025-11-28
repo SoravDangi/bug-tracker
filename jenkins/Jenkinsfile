@@ -21,11 +21,14 @@ pipeline {
                             export GOMODCACHE=$WORKSPACE/.gocache
                             export GOCACHE=$WORKSPACE/.gocache
 
+                            # Run tests and produce JUnit XML
                             go mod download
                             go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-                            # generate coverage report 
-                            go test -coverprofile=coverge.out -covermode=atomic ./...
+                            # Generate coverage (FIXED FILE NAME)
+                            go test -coverprofile=coverage.out -covermode=atomic ./...
+
+                            # Convert to HTML
                             go tool cover -html=coverage.out -o coverage.html
 
                             mkdir -p reports
@@ -34,14 +37,16 @@ pipeline {
                     }
                 }
             }
+
             post {
                 always {
                     junit 'bugtracker-backend/test-results.xml'
-                    publishHTML targets : {
-                        reportDir: 'bugtracker-backend/reports'.
+
+                    publishHTML(target: [
+                        reportDir: 'bugtracker-backend/reports',
                         reportFiles: 'coverage.html',
                         reportName: 'Backend Coverage Report'
-                    }
+                    ])
                 }
             }
         }
@@ -62,13 +67,12 @@ pipeline {
                     '''
                 }
             }
+
             post {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
-
                 }
             }
         }
-
     }
 }
