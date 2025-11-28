@@ -22,13 +22,13 @@ pipeline {
                             export GOCACHE=$WORKSPACE/.gocache
 
                             go mod download
-                            go test -v ./... 2.&1 | go-junit-report > test-results.xml
+                            go test -v ./... 2>&1 | go-junit-report > test-results.xml
                         '''
                     }
                 }
             }
-            post{
-                always{
+            post {
+                always {
                     junit 'bugtracker-backend/test-results.xml'
                 }
             }
@@ -46,11 +46,11 @@ pipeline {
                 dir('bugtracker-frontend') {
                     sh '''
                         npm ci
-                        npm test
+                        npm test -- --json --outputFile=test-results.json
                     '''
                 }
             }
-            post{
+            post {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
                 }
