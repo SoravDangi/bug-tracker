@@ -64,6 +64,8 @@ pipeline {
                     sh '''
                         npm ci
                         npm test -- --json --outputFile=test-results.json
+                        mkdir -p reports
+                        mv coverage reports/
                     '''
                 }
             }
@@ -71,6 +73,11 @@ pipeline {
             post {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
+                    publishHTML target: {
+                        reportDir: 'bugtracker-frontend/reports/coverage',
+                        reportFiles: 'index.html',
+                        reportNmae: 'Frontend Coverage Report'
+                    }
                 }
             }
         }
