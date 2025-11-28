@@ -2,28 +2,31 @@ pipeline {
     agent any
 
     stages {
-
         stage('Unit Tests - Backend') {
             agent {
                 docker {
                     image 'snakee/golang-junit:1.21'
+                    args '-u 0:0'   // run container as root to avoid permission errors
                     reuseNode true
                 }
             }
 
-            environment {
-                GOCACHE = "${WORKSPACE}/.cache/go-build"
-            }
-
             steps {
-                dir('bugtracker-backend') {
-                    sh '''
-                        mkdir -p $GOCACHE
-                        go test -v ./...
-                    '''
+                script {
+                    // Make a local Go cache directory in workspace
+                    sh 'mkdir -p $WORKSPACE/.gocache'
+
+                    dir('bugtracker-backend') {
+                        sh '''
+                            export GOMODCACHE=$WORKSPACE/.gocache
+                            export GOCACHE=$WORKSPACE/.gocache
+
+                            go mod download
+                            go test -v ./...
+                        '''
+                    }
                 }
             }
         }
     }
 }
-
