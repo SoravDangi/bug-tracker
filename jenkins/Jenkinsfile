@@ -3,86 +3,94 @@ pipeline {
 
     stages {
 
-        stage('Unit Tests - Backend') {
-            agent {
-                docker {
-                    image 'snakee/golang-junit:1.21'
-                    args '-u 0:0'
-                    reuseNode true
-                }
-            }
+        stage('Execute Unit Tests') {
+            parallel {
 
-            steps {
-                script {
-                    sh 'mkdir -p $WORKSPACE/.gocache'
+                stage('Unit Tests - Backend') {
+                    agent {
+                        docker {
+                            image 'snakee/golang-junit:1.21'
+                            args '-u 0:0'
+                            reuseNode true
+                        }
+                    }
 
-                    dir('bugtracker-backend') {
-                        sh '''
-                            export GOMODCACHE=$WORKSPACE/.gocache
-                            export GOCACHE=$WORKSPACE/.gocache
+                    steps {
+                        script {
+                            sh 'mkdir -p $WORKSPACE/.gocache'
 
-                            # Run tests and produce JUnit XML
-                            go mod download
-                            go test -v ./... 2>&1 | go-junit-report > test-results.xml
+                            dir('bugtracker-backend') {
+                                sh '''
+                                    export GOMODCACHE=$WORKSPACE/.gocache
+                                    export GOCACHE=$WORKSPACE/.gocache
 
-                            # Generate coverage
-                            go test -coverprofile=coverage.out -covermode=atomic ./...
+                                    # Run tests → JUnit output
+                                    go mod download
+                                    go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-                            # Convert to HTML
-                            go tool cover -html=coverage.out -o coverage.html
+                                    # Coverage
+                                    go test -coverprofile=coverage.out -covermode=atomic ./...
 
-                            mkdir -p reports
-                            mv coverage.html reports/
-                        '''
+                                    # Convert coverage to HTML
+                                    go tool cover -html=coverage.out -o coverage.html
+
+                                    mkdir -p reports
+                                    mv coverage.html reports/
+                                '''
+                            }
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit 'bugtracker-backend/test-results.xml'
+
+                            publishHTML(target: [
+                                reportDir: 'bugtracker-backend/reports',
+                                reportFiles: 'coverage.html',
+                                reportName: 'Backend Coverage Report'
+                            ])
+                        }
                     }
                 }
-            }
 
-            post {
-                always {
-                    junit 'bugtracker-backend/test-results.xml'
+                stage('Unit Tests - Frontend') {
+                    agent {
+                        docker {
+                            image 'node:20-alpine'
+                            reuseNode true
+                        }
+                    }
 
-                    publishHTML(target: [
-                        reportDir: 'bugtracker-backend/reports',
-                        reportFiles: 'coverage.html',
-                        reportName: 'Backend Coverage Report'
-                    ])
+                    steps {
+                        dir('bugtracker-frontend') {
+                            sh '''
+                                npm ci
+                                npm test -- --json --outputFile=test-results.json
+
+                                # Jest coverage folder: "coverage"
+                                mkdir -p reports
+                                mv coverage reports/
+                            '''
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit 'bugtracker-frontend/test-results.xml'
+
+                            publishHTML(target: [
+                                reportDir: 'bugtracker-frontend/reports/coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Frontend Coverage Report'
+                            ])
+                        }
+                    }
                 }
-            }
-        }
 
-        stage('Unit Tests - Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
-                }
-            }
+            } // end parallel
+        } // end stage Execute Unit Tests
 
-            steps {
-                dir('bugtracker-frontend') {
-                    sh '''
-                        npm ci
-                        npm test -- --json --outputFile=test-results.json
+    } // end stages
 
-                        # Move coverage report (jest creates folder named "coverage")
-                        mkdir -p reports
-                        mv coverage reports/
-                    '''
-                }
-            }
-
-            post {
-                always {
-                    junit 'bugtracker-frontend/test-results.xml'
-
-                    publishHTML(target: [
-                        reportDir: 'bugtracker-frontend/reports/coverage',
-                        reportFiles: 'index.html',
-                        reportName: 'Frontend Coverage Report'
-                    ])
-                }
-            }
-        }
-    }
-}
+} // end pipeline
