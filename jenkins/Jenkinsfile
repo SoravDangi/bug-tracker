@@ -24,14 +24,11 @@ pipeline {
                                     export GOMODCACHE=$WORKSPACE/.gocache
                                     export GOCACHE=$WORKSPACE/.gocache
 
-                                    # Run tests → JUnit output
                                     go mod download
                                     go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-                                    # Coverage
                                     go test -coverprofile=coverage.out -covermode=atomic ./...
 
-                                    # Convert coverage to HTML
                                     go tool cover -html=coverage.out -o coverage.html
 
                                     mkdir -p reports
@@ -44,7 +41,6 @@ pipeline {
                     post {
                         always {
                             junit 'bugtracker-backend/test-results.xml'
-
                             publishHTML(target: [
                                 reportDir: 'bugtracker-backend/reports',
                                 reportFiles: 'coverage.html',
@@ -68,7 +64,6 @@ pipeline {
                                 npm ci
                                 npm test -- --json --outputFile=test-results.json
 
-                                # Jest coverage folder: "coverage"
                                 mkdir -p reports
                                 mv coverage reports/
                             '''
@@ -78,7 +73,6 @@ pipeline {
                     post {
                         always {
                             junit 'bugtracker-frontend/test-results.xml'
-
                             publishHTML(target: [
                                 reportDir: 'bugtracker-frontend/reports/coverage',
                                 reportFiles: 'index.html',
@@ -89,40 +83,46 @@ pipeline {
                 }
 
             } // end parallel
-        } // end stage Execute Unit Tests
+        } // end Execute Unit Tests
+
         stage('Launch Applications') {
-             agent {
-                docker{
-                     image 'docker:27.5.1'
-                     reuseNode true
-                      args '-v /var/run/docker.sock:/var/run/docker.sock -u 0'
+            agent {
+                docker {
+                    image 'docker:27.5.1'
+                    reuseNode true
+                    args '-v /var/run/docker.sock:/var/run/docker.sock -u 0'
                 }
             }
-            steps{
+            steps {
                 sh 'docker compose up --build -d'
             }
         }
-        stage{'API Tests'} {
-            agent{
-                docker{
+
+        stage('API Tests') {
+            agent {
+                docker {
                     image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
                     reuseNode true
                     args '-u 0 --network=host'
                 }
             }
-            steps{
-                dir('tests-api'){
-                    sh 'npx wait-port https://localhost:8080/api/health -t 30000'
-                    sh 'npm ci'
-                    sh 'npm playwright test'
+            steps {
+                dir('tests-api') {
 
+                    // Correct wait-port usage
+                    sh 'npx wait-port 127.0.0.1:8080 -t 30000'
+
+                    sh 'npm ci'
+                    sh 'npx playwright test'
                 }
             }
         }
+
     } // end stages
-    post{
-        always{
+
+    post {
+        always {
             cleanWs()
         }
     }
-} // end pipeline
+}
