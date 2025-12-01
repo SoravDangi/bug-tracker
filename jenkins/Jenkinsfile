@@ -175,11 +175,11 @@ pipeline {
             }
             post{
                 always{
-                    publishHTML target:{
+                    publishHTML (target: [
                         reportDir: 'test-perf',
                         reportFiles: 'perf-results.html',
                         reportName: 'Performance Test Results Report'
-                    }
+                    ])
                 }
             }
         }
