@@ -21,21 +21,23 @@ jobs:
           go-version: "1.21"
           cache-dependency-path: bugtracker-backend/go.sum
 
-      - name: Execute Backend Unit Tests
-        working-directory: ./bugtracker-backend
+      - name: Install go-junit-report
+        run: |
+          go install github.com/jstemmer/go-junit-report@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
 
       - name: Execute Backend Unit Tests
         working-directory: ./bugtracker-backend
         run: |
           go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-      - name: Publish backend test results
+      - name: Publish Backend Unit Test Results
         uses: dorny/test-reporter@v1
         if: always()
         with:
           name: Backend Unit Tests Report
           path: bugtracker-backend/test-results.xml
-          reporter: jest-junit
+          reporter: java-junit
 
 
   unit-tests-frontend:
@@ -53,16 +55,20 @@ jobs:
           cache: "npm"
           cache-dependency-path: bugtracker-frontend/package-lock.json
 
-      - name: Execute Frontend Unit Tests
+      - name: Install dependencies
         working-directory: ./bugtracker-frontend
         run: |
           npm ci
-          npm test
-      - name: Publish Frontend Unit Tests
+
+      - name: Run Frontend Unit Tests
+        working-directory: ./bugtracker-frontend
+        run: |
+          npx jest --ci --reporters=default --reporters=jest-junit
+
+      - name: Publish Frontend Unit Test Results
         uses: dorny/test-reporter@v1
         if: always()
         with:
-         name: Frontend Unit Tests Report
-         path: bugtracker-frontend/test-results.xml
-         reporter: jest-junit
-        
+          name: Frontend Unit Tests Report
+          path: bugtracker-frontend/junit.xml
+          reporter: java-junit
