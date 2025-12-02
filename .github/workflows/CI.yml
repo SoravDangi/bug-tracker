@@ -35,7 +35,6 @@ jobs:
         id: test-backend
         working-directory: ./bugtracker-backend
         run: |
-
           go test -json -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out > coverage.txt
 
@@ -91,7 +90,6 @@ jobs:
           cat full_output.txt >> $GITHUB_OUTPUT
           echo "EOP" >> $GITHUB_OUTPUT
 
-
       - name: Publish Frontend Unit Test Results
         uses: dorny/test-reporter@v1
         if: always()
@@ -106,7 +104,7 @@ jobs:
     needs: [unit-tests-backend, unit-tests-frontend]
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write   # ✅ FIXED PERMISSION
+      pull-requests: write
 
     steps:
       - name: Create Backend Coverage Comment
@@ -123,18 +121,18 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Frontend Test Coverage Report
-            ${{ needs.unit-tests-frontend.outputs.coverage }}   
+            ${{ needs.unit-tests-frontend.outputs.coverage }}
 
-api-tests:
-  needs: [unit-tests-backend, unit-tests-frontend]
-  runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+  api-tests:
+    needs: [unit-tests-backend, unit-tests-frontend]
+    runs-on: ubuntu-latest
 
-    - name: Launch Application
-      run: |
-        docker compose up--build -d
-        npx wait-port http://localhost:8080/api/heath -t 30000
-             
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Launch Application
+        run: |
+          docker compose up --build -d
+          npx wait-port http://localhost:8080/api/health -t 30000
