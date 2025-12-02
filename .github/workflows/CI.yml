@@ -142,5 +142,13 @@ jobs:
         run: |
           npm ci
           npx playwright test
-
+       
+      - name: Upload API test results
+        if: always()
+        uses: actions/upload-artifacts@v4
+        with:
+          name: api-test-results
+          path: ./tests-api/tests-results/
+          retention-days: 30
+           
        
