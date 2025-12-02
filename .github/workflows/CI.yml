@@ -69,7 +69,7 @@ jobs:
         working-directory: ./bugtracker-frontend
         run: |
           npm ci
-          npm test | tee full_putput.txt
+          npm test | tee full_output.txt
           
           echo "## Go Test Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
