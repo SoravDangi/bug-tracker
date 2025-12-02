@@ -61,6 +61,8 @@ jobs:
 
   unit-tests-frontend:
     runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.test-frontend.outputs.report }}
 
     steps:
       - name: Checkout code
@@ -74,6 +76,7 @@ jobs:
           cache-dependency-path: bugtracker-frontend/package-lock.json
 
       - name: Run Frontend Unit Tests
+        id: test-frontend
         working-directory: ./bugtracker-frontend
         run: |
           npm ci
@@ -83,6 +86,11 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat full_output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "report<<EOP" >> $GITHUB_OUTPUT
+          cat full_output.txt >> $GITHUB_OUTPUT
+          echo "EOP" >> $GITHUB_OUTPUT
+
 
       - name: Publish Frontend Unit Test Results
         uses: dorny/test-reporter@v1
@@ -95,7 +103,7 @@ jobs:
 
   create-coverage-comment:
     if: github.event_name == 'pull_request'
-    needs: [unit-tests-backend]
+    needs: [unit-tests-backend, unit-tests-frontend]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write   # ✅ FIXED PERMISSION
@@ -108,3 +116,11 @@ jobs:
           body: |
             ## Backend Test Coverage Report
             ${{ needs.unit-tests-backend.outputs.coverage }}
+
+      - name: Create Frontend Coverage Comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Frontend Test Coverage Report
+            ${{ needs.unit-tests-frontend.outputs.coverage }}   
