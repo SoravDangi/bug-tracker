@@ -144,14 +144,14 @@ jobs:
           npx playwright test
         
       - name: Run E2E Tests
-        working_directory: ./test-e2e  
+        working-directory: ./test-e2e  
         env:
           CI: "1"
         run: |
           npm ci
           npx playwright install
           npx playwright test
-            
+
       - name: Shut down Application
         run: docker compose down   
        
