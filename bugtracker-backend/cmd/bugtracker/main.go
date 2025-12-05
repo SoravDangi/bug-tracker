@@ -87,7 +87,7 @@ func createServer() *http.Server {
 	// REQUIRED FOR RENDER: read port from environment
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // fallback for local development
+		port = "10000" // fallback for local development
 	}
 
 	addr := "0.0.0.0:" + port
