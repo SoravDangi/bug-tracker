@@ -1,27 +1,26 @@
-FROM golang:1.21-alpine
+# ------------ Build Stage ------------
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Create mount point directory with proper permissions
-RUN mkdir -p /data && chmod 777 /data
-
-# Install wget for healthcheck
-RUN apk add --no-cache wget
-
-# Copy go mod files
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build the application
-RUN go build -o main cmd/bugtracker/main.go
+RUN go build -o server ./cmd/bugtracker/main.go
 
-# Expose port 10000
+
+# ------------ Run Stage ------------
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/server .
+
+# Render sets PORT automatically
+ENV PORT=10000
+
 EXPOSE 10000
 
-# Run the binary
-CMD ["./main"] 
+CMD ["./server"]
