@@ -11,6 +11,9 @@ on:
 
 jobs:
 
+  # ---------------------------
+  # BACKEND UNIT TESTS
+  # ---------------------------
   unit-tests-backend:
     runs-on: ubuntu-latest
     outputs:
@@ -58,6 +61,9 @@ jobs:
           reporter: java-junit
 
 
+  # ---------------------------
+  # FRONTEND UNIT TESTS
+  # ---------------------------
   unit-tests-frontend:
     runs-on: ubuntu-latest
     outputs:
@@ -99,6 +105,9 @@ jobs:
           reporter: jest-junit
 
 
+  # ---------------------------
+  # POST COVERAGE COMMENT (PR ONLY)
+  # ---------------------------
   create-coverage-comment:
     if: github.event_name == 'pull_request'
     needs: [unit-tests-backend, unit-tests-frontend]
@@ -124,6 +133,9 @@ jobs:
             ${{ needs.unit-tests-frontend.outputs.coverage }}
 
 
+  # ---------------------------
+  # API / E2E / Performance TESTS
+  # ---------------------------
   api-e2e-perf-tests:
     needs: [unit-tests-backend, unit-tests-frontend]
     runs-on: ubuntu-latest
@@ -135,7 +147,7 @@ jobs:
       - name: Launch Application
         run: |
           docker compose up --build -d
-          npx wait-port http://localhost:8080/api/health -t 30000
+          npx wait-port http://localhost:10000/api/health -t 30000
 
       - name: Run API tests
         working-directory: ./tests-api
@@ -163,7 +175,8 @@ jobs:
 
       - name: Shut down Application
         run: docker compose down   
-       
+
+      # Uploading reports
       - name: Upload API test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -220,12 +233,16 @@ jobs:
           path: ./tests-e2e/test-results/*.xml
           reporter: jest-junit 
 
+
+  # ---------------------------
+  # BACKEND DEPLOY TO RENDER
+  # ---------------------------
   deploy-backend:
-    needs: [api-e2e-perf-tests]   # Only after all tests pass
+    needs: [api-e2e-perf-tests]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Render Deploy
+      - name: Deploy Backend to Render
         run: |
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
@@ -233,8 +250,12 @@ jobs:
             -d '{"clearCache": false}' \
             https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
 
+
+  # ---------------------------
+  # FRONTEND DEPLOY TO NETLIFY
+  # ---------------------------
   deploy-frontend:
-    needs: [api-e2e-perf-tests]  # Only after tests pass
+    needs: [api-e2e-perf-tests]
     runs-on: ubuntu-latest
 
     steps:

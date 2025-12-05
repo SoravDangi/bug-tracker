@@ -6,22 +6,15 @@ services:
   frontend:
     build:
       context: ./bugtracker-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:10000
     ports:
       - "3000:3000"
-    environment:
-      # Use backend service name instead of localhost
-      - NEXT_PUBLIC_API_URL=http://backend:10000
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - bugtracker
-    healthcheck:
-      # Checking that frontend started (inside container)
-      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   backend:
     build:
@@ -33,11 +26,10 @@ services:
     networks:
       - bugtracker
     healthcheck:
-      # health route should use backend’s internal port (10000)
       test: ["CMD", "wget", "-O", "-", "http://localhost:10000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      interval: 5s
+      timeout: 3s
+      retries: 20
     logging:
       driver: "json-file"
       options:

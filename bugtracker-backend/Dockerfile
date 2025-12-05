@@ -18,7 +18,6 @@ WORKDIR /app
 
 COPY --from=builder /app/server .
 
-# Render sets PORT automatically
 ENV PORT=10000
 
 EXPOSE 10000
