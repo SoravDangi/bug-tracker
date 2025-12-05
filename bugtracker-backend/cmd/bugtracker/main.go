@@ -57,7 +57,6 @@ func main() {
 }
 
 func createServer() *http.Server {
-    // 🔥 RENDER FIX — REQUIRED 🔥
     port := os.Getenv("PORT")
     if port == "" {
         port = "8080"
@@ -68,20 +67,23 @@ func createServer() *http.Server {
 
     r := mux.NewRouter()
 
+    // Required for Render health check
+    r.HandleFunc("/health", handlers.HealthCheck).Methods("GET")
+
+    // Your API
+    r.HandleFunc("/api/health", handlers.HealthCheck).Methods("GET")
+    api := r.PathPrefix("/api").Subrouter()
+    handlers.RegisterRoutes(api)
+
     // CORS
     c := cors.New(cors.Options{
-        AllowedOrigins: []string{"*"},
-        AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-        AllowedHeaders: []string{"*"},
+        AllowedOrigins:   []string{"*"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"*"},
         AllowCredentials: true,
     })
 
     handler := c.Handler(r)
-
-    // Routes
-    r.HandleFunc("/api/health", handlers.HealthCheck).Methods("GET")
-    api := r.PathPrefix("/api").Subrouter()
-    handlers.RegisterRoutes(api)
 
     return &http.Server{
         Addr:    address,
