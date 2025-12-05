@@ -25,13 +25,13 @@ services:
     build:
       context: ./bugtracker-backend
     ports:
-      - "8080:8080"
+      - "10000:10000"
     volumes:
       - ./data:/app/data
     networks:
       - bugtracker
     healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:8080/api/health"]
+      test: ["CMD", "wget", "-O", "-", "http://localhost:10000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 3
