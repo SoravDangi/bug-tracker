@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,71 +26,76 @@ func main() {
 	}
 	defer db.Cleanup()
 
-	// Create the production server
+	// Create server
 	srv := createServer()
 
-	// Channel to listen for errors coming from the listener
+	// Channel to listen errors
 	serverErrors := make(chan error, 1)
 
-	// Start the server
+	// Start server
 	go func() {
-		log.Printf("Server starting on port %s...\n", srv.Addr)
+		log.Printf("Server starting on %s...\n", srv.Addr)
 		serverErrors <- srv.ListenAndServe()
 	}()
 
-	// Channel to listen for an interrupt or terminate signal from the OS
+	// Shutdown signals
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	// Blocking main and waiting for shutdown
+	// Wait
 	select {
 	case err := <-serverErrors:
-		log.Fatalf("Error starting server: %v", err)
+		log.Fatalf("Server error: %v", err)
 
 	case sig := <-shutdown:
 		log.Printf("Received signal %v: initiating shutdown", sig)
 
-		// Give outstanding requests a deadline for completion
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		// Asking listener to shut down and shed load
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("Graceful shutdown did not complete in %v: %v", 10*time.Second, err)
+			log.Printf("Graceful shutdown failed: %v", err)
 		} else {
 			log.Println("Server shut down gracefully.")
 		}
 	}
 }
 
-// Production server creation
 func createServer() *http.Server {
 	r := mux.NewRouter()
 
-	// Apply CORS middleware to all routes
+	// CORS
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
 			"http://localhost:3000",
 			"https://bugtracker-staging-jameswillett.fly.dev",
 			"https://bugtracker-jameswillett.fly.dev",
+			"https://your-netlify-frontend-domain.netlify.app",
 		},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
-		ExposedHeaders: []string{"Content-Length"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Content-Length"},
 		AllowCredentials: true,
 	})
 
-	// Wrap the router with CORS middleware
 	handler := c.Handler(r)
 
-	// Register all routes
+	// Routes
 	r.HandleFunc("/api/health", handlers.HealthCheck).Methods("GET")
 	apiRouter := r.PathPrefix("/api").Subrouter()
 	handlers.RegisterRoutes(apiRouter)
 
-	log.Printf("Starting server on :8080")
+	// REQUIRED FOR RENDER: read port from environment
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // fallback for local development
+	}
+
+	addr := "0.0.0.0:" + port
+	log.Printf("Server binding to %s", addr)
+
 	return &http.Server{
-		Addr:    "0.0.0.0:8080",
+		Addr:    addr,
 		Handler: handler,
 	}
 }
