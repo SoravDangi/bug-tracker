@@ -211,11 +211,11 @@ jobs:
           name: api-playwright-report
           path: ./tests-api/playwright-report/
 
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-playwright-report
-          path: ./tests-e2e/playwright-report/
+    #  - uses: actions/upload-artifact@v4
+    #    if: always()
+    #    with:
+    #      name: e2e-playwright-report
+    #      path: ./tests-e2e/playwright-report/
 
       - uses: actions/upload-artifact@v4
         if: always()
