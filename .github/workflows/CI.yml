@@ -18,11 +18,9 @@ jobs:
       coverage: ${{ steps.test-backend.outputs.report }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.21"
           cache-dependency-path: bugtracker-backend/go.sum
@@ -50,15 +48,12 @@ jobs:
 
           go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-      - name: Publish Backend Unit Test Results
-        uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
           name: Backend Unit Tests Report
           path: bugtracker-backend/test-results.xml
           reporter: java-junit
-
-
 
   # ---------------------------
   # FRONTEND UNIT TESTS
@@ -69,11 +64,9 @@ jobs:
       coverage: ${{ steps.test-frontend.outputs.report }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -95,8 +88,7 @@ jobs:
           cat full_output.txt >> $GITHUB_OUTPUT
           echo "EOP" >> $GITHUB_OUTPUT
 
-      - name: Publish Frontend Unit Test Results
-        uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
           name: Frontend Unit Tests Report
@@ -104,10 +96,9 @@ jobs:
           reporter: jest-junit
 
 
-
-  # ---------------------------
-  # POST COVERAGE COMMENT
-  # ---------------------------
+  # ------------------------------------------------------
+  # POST COVERAGE COMMENT (PR Only)
+  # ------------------------------------------------------
   create-coverage-comment:
     if: github.event_name == 'pull_request'
     needs: [unit-tests-backend, unit-tests-frontend]
@@ -116,16 +107,14 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Create Backend Coverage Comment
-        uses: peter-evans/create-or-update-comment@v4
+      - uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Backend Test Coverage Report
             ${{ needs.unit-tests-backend.outputs.coverage }}
 
-      - name: Create Frontend Coverage Comment
-        uses: peter-evans/create-or-update-comment@v4
+      - uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
@@ -133,111 +122,101 @@ jobs:
             ${{ needs.unit-tests-frontend.outputs.coverage }}
 
 
-
   # ------------------------------------------------------
-  # API / E2E / Performance TESTS
+  # API + E2E + PERFORMANCE TESTS
   # ------------------------------------------------------
   api-e2e-perf-tests:
     needs: [unit-tests-backend, unit-tests-frontend]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Playwright Browsers + Dependencies
+      - name: Install Playwright Browsers
         run: |
           npm i -g playwright
           playwright install --with-deps
-          
-      - name: Launch Application
+
+      - name: Start Application
         run: |
           docker compose up --build -d
-          npx wait-on http://localhost:10000/api/health
+          echo "Waiting for backend on :10000 health..."
+          curl --retry 20 --retry-delay 3 --retry-all-errors http://localhost:10000/api/health
 
       # -----------------------
-      # API Tests
+      # API TESTS
       # -----------------------
-      - name: Run API tests
+      - name: Run API Tests
         working-directory: ./tests-api
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: "http://localhost:10000/api/"
         run: |
           npm ci
-          playwright install --with-deps
           npx playwright test
 
       # -----------------------
-      # UI E2E Tests
+      # UI E2E TESTS
       # -----------------------
       - name: Run E2E Tests
-        working-directory: ./tests-e2e  
+        working-directory: ./tests-e2e
         env:
-          CI: "1"
           PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
+          CI: "1"
         run: |
           npm ci
-          playwright install --with-deps
           npx playwright test
 
       # -----------------------
-      # K6 Performance Test
+      # K6 PERFORMANCE TEST
       # -----------------------
-      - name: Setup K6
-        uses: grafana/setup-k6-action@v1
+      - uses: grafana/setup-k6-action@v1
 
-      - name: Run Performance Test
-        uses: grafana/run-k6-action@v1
+      - uses: grafana/run-k6-action@v1
         with:
           path: tests-perf/script.js
-          flags: --out json=summary.json  
+          flags: --out json=summary.json
 
-      - name: Shut down Application
-        run: docker compose down    
+      - name: Shutdown App
+        run: docker compose down
 
-      # Uploading reports
-      - name: Upload API test results
+      # Upload Reports
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: api-test-results
           path: ./tests-api/test-results/
 
-      - name: Upload API playwright report
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: api-test-playwright-report
+          name: api-playwright-report
           path: ./tests-api/playwright-report/
 
-      - name: Upload E2E playwright report
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: e2e-test-playwright-report
+          name: e2e-playwright-report
           path: ./tests-e2e/playwright-report/
 
-      - name: Upload Performance Raw Results
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: Performance-raw-results
+          name: performance-raw-results
           path: summary.json
 
-      - name: Publish API Test Results
-        uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
           name: API Tests Report
           path: ./tests-api/test-results/*.xml
           reporter: jest-junit
 
-      - name: Publish E2E Test Results
-        uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
           name: E2E Tests Report
           path: ./tests-e2e/test-results/*.xml
-          reporter: jest-junit 
-
+          reporter: jest-junit
 
 
   # ---------------------------
@@ -251,13 +230,10 @@ jobs:
       - name: Deploy Backend to Render
         run: |
           curl -X POST \
-            -H "Authorization: Bearer ${{
-              secrets.RENDER_API_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"clearCache": false}' \
-            https://api.render.com/v1/services/${{
-              secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
-
+            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
 
 
   # ---------------------------
@@ -268,15 +244,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install deps & build frontend
+      - name: Build frontend
         working-directory: ./bugtracker-frontend
         run: |
           npm ci
