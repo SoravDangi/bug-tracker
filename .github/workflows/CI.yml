@@ -162,6 +162,7 @@ jobs:
         working-directory: ./tests-e2e
         env:
           PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
+          NEXT_PUBLIC_API_BASE_URL: "http://localhost:10000/api"
           CI: "1"
         run: |
           npm ci
