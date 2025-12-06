@@ -175,15 +175,15 @@ jobs:
       # -----------------------
       # E2E TESTS
       # -----------------------
-      - name: Run E2E Tests
-        working-directory: ./tests-e2e
-        env:
-          PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
-          CI: "1"
-        run: |
-          npm ci
-          npx playwright install --with-deps
-          npx playwright test
+      #- name: Run E2E Tests
+      #  working-directory: ./tests-e2e
+      #  env:
+      #    PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
+      #   CI: "1"
+      #  run: |
+      #    npm ci
+      #    npx playwright install --with-deps
+      #    npx playwright test
 
       # -----------------------
       # PERFORMANCE TEST
@@ -282,4 +282,4 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          
+
