@@ -152,6 +152,7 @@ jobs:
           PLAYWRIGHT_TEST_BASE_URL: "http://localhost:10000/api/"
         run: |
           npm ci
+          npx playwright install --with-deps
           npx playwright test
 
       # -----------------------
@@ -164,6 +165,7 @@ jobs:
           CI: "1"
         run: |
           npm ci
+          npx playwright install --with-deps
           npx playwright test
 
       # -----------------------
