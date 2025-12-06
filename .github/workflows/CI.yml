@@ -61,6 +61,7 @@ jobs:
           reporter: java-junit
 
 
+
   # ---------------------------
   # FRONTEND UNIT TESTS
   # ---------------------------
@@ -105,6 +106,7 @@ jobs:
           reporter: jest-junit
 
 
+
   # ---------------------------
   # POST COVERAGE COMMENT (PR ONLY)
   # ---------------------------
@@ -133,9 +135,10 @@ jobs:
             ${{ needs.unit-tests-frontend.outputs.coverage }}
 
 
-  # ---------------------------
+
+  # ------------------------------------------------------
   # API / E2E / Performance TESTS
-  # ---------------------------
+  # ------------------------------------------------------
   api-e2e-perf-tests:
     needs: [unit-tests-backend, unit-tests-frontend]
     runs-on: ubuntu-latest
@@ -144,26 +147,60 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Playwright dependency fix
+      - name: Install Linux dependencies for Playwright
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-4-1 \
+            libgraphene-1.0-0 \
+            libwoff1 \
+            libvpx7 \
+            libevent-2.1-7 \
+            libopus0 \
+            libgstreamer1.0-0 \
+            libgstreamer-plugins-base1.0-0 \
+            libgstreamer-gl1.0-0 \
+            libflite1 \
+            libavif13 \
+            libharfbuzz-icu0 \
+            libsecret-1-0 \
+            libhyphen0 \
+            libmanette-0.2-0 \
+            libgles2 \
+            libx264-163
+
       - name: Launch Application
         run: |
           docker compose up --build -d
           npx wait-port http://localhost:10000/api/health -t 30000
 
+      # -----------------------
+      # API Tests
+      # -----------------------
       - name: Run API tests
         working-directory: ./tests-api
         run: |
           npm ci
+          npx playwright install --with-deps
           npx playwright test
         
+      # -----------------------
+      # UI E2E Tests
+      # -----------------------
       - name: Run E2E Tests
         working-directory: ./tests-e2e  
         env:
           CI: "1"
+          PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
         run: |
           npm ci
-          npx playwright install
+          npx playwright install --with-deps
           npx playwright test
 
+      # -----------------------
+      # K6 Performance Test
+      # -----------------------
       - name: Setup K6
         uses: grafana/setup-k6-action@v1
 
@@ -234,6 +271,7 @@ jobs:
           reporter: jest-junit 
 
 
+
   # ---------------------------
   # BACKEND DEPLOY TO RENDER
   # ---------------------------
@@ -249,6 +287,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"clearCache": false}' \
             https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
+
 
 
   # ---------------------------
@@ -280,4 +319,3 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          
