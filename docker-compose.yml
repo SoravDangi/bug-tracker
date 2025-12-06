@@ -7,7 +7,7 @@ services:
     build:
       context: ./bugtracker-frontend
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:10000
+      - NEXT_PUBLIC_API_URL=http://backend:10000/api
     ports:
       - "3000:3000"
     depends_on:
