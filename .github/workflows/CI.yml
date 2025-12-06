@@ -132,37 +132,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # -----------------------
+      # BUILD FRONTEND
+      # -----------------------
+      - name: Build Frontend
+        working-directory: ./bugtracker-frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:10000/api"
+        run: |
+          npm ci
+          npm run build
+
+      # -----------------------
+      # INSTALL PLAYWRIGHT
+      # -----------------------
       - name: Install Playwright Browsers
         run: |
           npm i -g playwright
           playwright install --with-deps
 
+      # -----------------------
+      # START APP
+      # -----------------------
       - name: Start Application
         run: |
           docker compose up --build -d
           echo "Waiting for backend on :10000 health..."
           curl --retry 20 --retry-delay 3 --retry-all-errors http://localhost:10000/api/health
-
-      - name: Build Frontend
-        working-directory: ./frontend
-        env:
-          NEXT_PUBLIC_API_URL: "http://localhost:10000/api"
-        run: |
-         npm ci
-         npm run build
-
-      - name: Start Frontend
-        working-directory: ./frontend
-        env:
-          NEXT_PUBLIC_API_URL: "http://localhost:10000/api"
-        run: |
-          nohup npm start & 
-          echo "Waiting for frontend on :3000..."
-          curl --retry 20 --retry-delay 3 --retry-all-errors http://localhost:3000
-
-
-
-
 
       # -----------------------
       # API TESTS
@@ -177,20 +173,20 @@ jobs:
           npx playwright test
 
       # -----------------------
-      # UI E2E TESTS
+      # E2E TESTS
       # -----------------------
       - name: Run E2E Tests
         working-directory: ./tests-e2e
         env:
           PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
-          NEXT_PUBLIC_API_BASE_URL: "http://localhost:10000/api"
+          CI: "1"
         run: |
           npm ci
           npx playwright install --with-deps
           npx playwright test
 
       # -----------------------
-      # K6 PERFORMANCE TEST
+      # PERFORMANCE TEST
       # -----------------------
       - uses: grafana/setup-k6-action@v1
 
