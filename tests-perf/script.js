@@ -14,7 +14,7 @@ export const options = {
 
 export default function () {
   // Health check
-  const healthRes = http.get("http://localhost:8080/api/health");
+  const healthRes = http.get("http://localhost:10000/api/health");
   check(healthRes, {
     "health check status is 200": (r) => r.status === 200,
   });
@@ -29,7 +29,7 @@ export default function () {
 
   const headers = { "Content-Type": "application/json" };
 
-  const createBugRes = http.post("http://localhost:8080/api/bugs", payload, {
+  const createBugRes = http.post("http://localhost:10000/api/bugs", payload, {
     headers,
   });
 
