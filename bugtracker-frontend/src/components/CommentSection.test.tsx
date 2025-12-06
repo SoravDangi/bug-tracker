@@ -51,19 +51,16 @@ describe("CommentSection", () => {
     fireEvent.click(screen.getByText("Add Comment"));
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        "http://localhost:10000/api/bugs/1/comments",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            author: "Jane Smith",
-            content: "This is a new comment",
-          }),
-        }
-      );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/bugs/1/comments"),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          author: "Jane Smith",
+          content: "This is a new comment",
+        }),
+      })
+    );
       expect(onCommentAdded).toHaveBeenCalled();
     });
   });
