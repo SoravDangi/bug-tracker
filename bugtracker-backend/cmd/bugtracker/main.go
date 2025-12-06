@@ -59,7 +59,7 @@ func main() {
 func createServer() *http.Server {
     port := os.Getenv("PORT")
     if port == "" {
-        port = "8080"
+        port = "10000"
     }
 
     address := fmt.Sprintf("0.0.0.0:%s", port)
