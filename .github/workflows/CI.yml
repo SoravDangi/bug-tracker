@@ -2,11 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -108,7 +106,7 @@ jobs:
 
 
   # ---------------------------
-  # POST COVERAGE COMMENT (PR ONLY)
+  # POST COVERAGE COMMENT
   # ---------------------------
   create-coverage-comment:
     if: github.event_name == 'pull_request'
@@ -147,18 +145,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Playwright dependency fix
-      - name: Install Playwright dependencies
+      - name: Install Playwright Browsers + Dependencies
+        run: |
+          npm i -g playwright
+          playwright install --with-deps
+
+      - name: Fix Docker Compose plugin
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgbm1 libasound2
-          npx playwright install --with-deps
-
+          sudo apt-get install -y docker-compose-plugin
 
       - name: Launch Application
         run: |
           docker compose up --build -d
-          npx wait-port http://localhost:10000/api/health -t 30000
+          npx wait-on http://localhost:10000/api/health
 
       # -----------------------
       # API Tests
@@ -167,9 +167,9 @@ jobs:
         working-directory: ./tests-api
         run: |
           npm ci
-          npx playwright install --with-deps
+          playwright install --with-deps
           npx playwright test
-        
+
       # -----------------------
       # UI E2E Tests
       # -----------------------
@@ -180,7 +180,7 @@ jobs:
           PLAYWRIGHT_TEST_BASE_URL: "http://localhost:3000"
         run: |
           npm ci
-          npx playwright install --with-deps
+          playwright install --with-deps
           npx playwright test
 
       # -----------------------
@@ -196,7 +196,7 @@ jobs:
           flags: --out json=summary.json  
 
       - name: Shut down Application
-        run: docker compose down   
+        run: docker compose down    
 
       # Uploading reports
       - name: Upload API test results
@@ -205,23 +205,20 @@ jobs:
         with:
           name: api-test-results
           path: ./tests-api/test-results/
-          retention-days: 30
 
-      - name: Upload API test playwright report
+      - name: Upload API playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: api-test-playwright-report
           path: ./tests-api/playwright-report/
-          retention-days: 30
 
-      - name: Upload E2E test playwright report
+      - name: Upload E2E playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-playwright-report
           path: ./tests-e2e/playwright-report/
-          retention-days: 30      
 
       - name: Upload Performance Raw Results
         if: always()
@@ -229,15 +226,6 @@ jobs:
         with:
           name: Performance-raw-results
           path: summary.json
-          retention-days: 30
- 
-      - name: Upload Performance HTML Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Performance-report
-          path: perf-results.html
-          retention-days: 30
 
       - name: Publish API Test Results
         uses: dorny/test-reporter@v1
@@ -268,10 +256,12 @@ jobs:
       - name: Deploy Backend to Render
         run: |
           curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Authorization: Bearer ${{
+              secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"clearCache": false}' \
-            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
+            https://api.render.com/v1/services/${{
+              secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
 
 
 
