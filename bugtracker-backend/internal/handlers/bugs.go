@@ -30,22 +30,22 @@ func CreateBug(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateBugRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		log.Printf("Failed to decode create bug request: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "invalid request body",
+		})
 		return
 	}
 
 	if req.Title == "" {
-		http.Error(w, "title is required", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "title is required",
+		})
 		return
 	}
 
-	// 🔥 Ensure default values
-	if req.Status == "" {
-		req.Status = "Open"
-	}
-	if req.Priority == "" {
-		req.Priority = "Low"
-	}
 
 	bug := &models.Bug{
 		Title:       req.Title,
@@ -58,7 +58,11 @@ func CreateBug(w http.ResponseWriter, r *http.Request) {
 
 	// 🔥 This MUST assign an ID, or GET /bugs/:id WILL FAIL
 	if err := db.CreateBug(bug); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to create bug: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": err.Error(),
+		})
 		return
 	}
 
