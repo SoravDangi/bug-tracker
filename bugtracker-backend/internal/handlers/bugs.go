@@ -30,20 +30,21 @@ func CreateBug(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateBugRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Failed to decode create bug request: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "invalid request body",
-		})
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.Title == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "title is required",
-		})
+		http.Error(w, "title is required", http.StatusBadRequest)
 		return
+	}
+
+	// 🔥 Ensure default values
+	if req.Status == "" {
+		req.Status = "Open"
+	}
+	if req.Priority == "" {
+		req.Priority = "Low"
 	}
 
 	bug := &models.Bug{
@@ -55,19 +56,18 @@ func CreateBug(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:   time.Now(),
 	}
 
+	// 🔥 This MUST assign an ID, or GET /bugs/:id WILL FAIL
 	if err := db.CreateBug(bug); err != nil {
-		log.Printf("Failed to create bug: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": err.Error(),
-		})
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	json.NewEncoder(w).Encode(bug)
 }
+
 
 func GetBugs(w http.ResponseWriter, r *http.Request) {
 	log.Printf("GetBugs called from %s", r.RemoteAddr)

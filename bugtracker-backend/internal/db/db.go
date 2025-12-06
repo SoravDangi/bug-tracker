@@ -155,10 +155,16 @@ func DeleteBug(id int) error {
 
 func Cleanup() {
 	if db != nil {
-		db.Close()
+		_ = db.Close()
 		db = nil
 	}
+
 	initialized = false
+
+	// Only for tests: completely delete DB file so Init() can reopen fresh
+	if os.Getenv("TEST_MODE") == "1" {
+		_ = os.Remove(databasePath)
+	}
 }
 
 func getNextID(tx *bbolt.Tx) (int, error) {
