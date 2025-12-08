@@ -307,7 +307,7 @@ jobs:
         env: 
           PLAYWRIGHT_TEST_BASE_URL: "https://bugtracker12.netlify.app/"
         run: |
-          npx playwright test
+          npx playwright test --reporter=junit --output=test-results
 
       - name : Upload Post Deployment Test Report
         if: always()
@@ -322,6 +322,6 @@ jobs:
         if: always()
         with: 
           name: Post Deployment Test Report
-          path: ./tests-e2e/test-results.xml
+          path: ./tests-e2e/test-results/*.xml
           reporter: jest-junit
 
