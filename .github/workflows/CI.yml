@@ -300,7 +300,7 @@ jobs:
         working-directory: ./tests-e2e
         run : |
           npm ci
-          npm playwright install
+          npx playwright install
 
       - name: Run Post Deployment Tests
         working-directory: ./tests-e2e
