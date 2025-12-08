@@ -259,27 +259,34 @@ jobs:
   # FRONTEND DEPLOY TO NETLIFY
   # ---------------------------
   deploy-frontend:
-    needs: [api-e2e-perf-tests]
-    runs-on: ubuntu-latest
+  needs: [api-e2e-perf-tests]
+  runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+  steps:
+    - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "20"
 
-      - name: Build frontend
-        working-directory: ./bugtracker-frontend
-        run: |
-          npm ci
-          npm run build
+    - name: Install Netlify CLI
+      run: npm install -g netlify-cli
 
-      - name: Deploy to Netlify
-        uses: netlify/actions/cli@v2
-        with:
-          args: deploy --prod --dir=bugtracker-frontend/out
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    - name: Build frontend
+      working-directory: ./bugtracker-frontend
+      run: |
+        npm ci
+        npm run build
+
+    - name: Deploy to Netlify
+      working-directory: ./bugtracker-frontend
+      run: |
+        netlify deploy \
+          --prod \
+          --dir=.next \
+          --site="$NETLIFY_SITE_ID"
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
 
