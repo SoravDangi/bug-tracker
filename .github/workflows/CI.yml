@@ -322,7 +322,7 @@ jobs:
         if: always()
         with: 
           name: Post Deployment Test Report
-          path: ./tests-e2e/test-results/*.xml
+          path: ./tests-e2e/test-results/results.xml
           reporter: jest-junit
-          
+
 

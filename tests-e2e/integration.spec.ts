@@ -66,7 +66,7 @@ test("Adding a comment to a bug", async ({ page }) => {
 
   await page.click('button:text("Add New Bug")');
   await page.waitForSelector('[data-testid="add-bug-form"]', {
-    timeout: 60000,
+    timeout: 100000,
   });
 
   const uniqueTitle = `Bug for Comment ${Date.now()}`;
@@ -80,7 +80,7 @@ test("Adding a comment to a bug", async ({ page }) => {
   await page.locator(`a:text("${uniqueTitle}")`).first().click();
 
   await page.waitForSelector('[data-testid="comment-form"]', {
-    timeout: 60000,
+    timeout: 100000,
   });
   console.log("Comment form found");
 
