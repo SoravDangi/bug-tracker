@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "vercel-build": "npm run prepare && next build",
+    "vercel-build": "next build",
     "lint": "next lint",
     "test": "jest --coverage --coverageReporters='text-summary' --coverageReporters='text' --coverageReporters='html' --reporters=default --reporters=jest-junit",
     "test:watch": "jest --watch",
