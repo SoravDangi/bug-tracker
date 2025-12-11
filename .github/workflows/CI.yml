@@ -285,36 +285,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+     - name: Checkout repository
+       uses: actions/checkout@v4
+
+     - name: Deploy to Vercel
+       uses: vercel/action@v3
+       with:
+         vercel-token: ${{ secrets.VERCEL_TOKEN }}        # Required
+         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}      # Required
+         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Required
+         working-directory: ./bugtracker-frontend         # Your frontend folder
+         prod: true                                       # Deploy to Production
+
+
+
+#    steps:
      # Step 1: Checkout code
-     - uses: actions/checkout@v4
+#     - uses: actions/checkout@v4
 
      # Step 2: Install Node.js
-     - uses: actions/setup-node@v4
-       with:
-         node-version: "20"
+#     - uses: actions/setup-node@v4
+#       with:
+#         node-version: "20"
 
-     # Step 3: Install Netlify CLI tool
-     - name: Install Netlify CLI
-       run: npm install -g netlify-cli
+#     # Step 3: Install Netlify CLI tool
+#     - name: Install Netlify CLI
+#       run: npm install -g netlify-cli
 
      # Step 4: Build frontend app
-     - name: Build frontend
-       working-directory: ./bugtracker-frontend
-       run: |
-         npm ci
-         npm run build
+#     - name: Build frontend
+#       working-directory: ./bugtracker-frontend
+#       run: |
+#         npm ci
+#         npm run build
 
      # Step 5: Deploy frontend output folder to Netlify
-     - name: Deploy to Netlify
-       working-directory: ./bugtracker-frontend
-       run: |
-          netlify deploy \
-           --prod \
-           --dir=.next \
-           --site="$NETLIFY_SITE_ID"
-       env:
-         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+#     - name: Deploy to Netlify
+#       working-directory: ./bugtracker-frontend
+#       run: |
+#          netlify deploy \
+#           --prod \
+#           --dir=.next \
+#           --site="$NETLIFY_SITE_ID"
+#       env:
+#         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+#         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
 
   # ======================================================
@@ -362,4 +377,4 @@ jobs:
           name: Post Deployment Test Report
           path: ./tests-e2e/test-results/results.xml
           reporter: jest-junit
-          
+
