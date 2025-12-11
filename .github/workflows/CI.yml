@@ -362,7 +362,7 @@ jobs:
         working-directory: ./tests-e2e
         env: 
 #          PLAYWRIGHT_TEST_BASE_URL: "https://bugtracker12.netlify.app/"
-          PLAYWRIGHT_TEST_BASE_URL: "https://bug-tracker-cfac6fvgi-soravdangis-projects.vercel.app/"
+          PLAYWRIGHT_TEST_BASE_URL: "https://bugtracker-frontend.vercel.app/"
         run: |
           npx playwright test 
 
