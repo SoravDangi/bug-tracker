@@ -1,6 +1,10 @@
 import { Bug } from "../types/bug";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://backend:10000";
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL is required but not set.");
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_PATH = "/api";
 
 export const getBugs = async (): Promise<Bug[]> => {

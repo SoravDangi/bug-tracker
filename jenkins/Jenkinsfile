@@ -149,6 +149,10 @@ pipeline {
                     reuseNode true
                     args '-u 0 --network=host'
                 }
+
+            }
+            environment {
+                NEXT_PUBLIC_API_URL = "http://backend:10000"
             }
             steps{
                 dir('tests-e2e'){
