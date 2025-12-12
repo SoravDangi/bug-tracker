@@ -40,6 +40,16 @@ services:
         aliases:
           - jenkins
 
+  backend:
+    build: ../bugtracker-backend
+    container_name: backend
+    ports:
+      - "10000:10000"
+    environment:
+      - PORT=10000
+    networks:
+      - jenkins
+
 networks:
   jenkins:
     driver: bridge
