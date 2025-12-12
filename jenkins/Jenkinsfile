@@ -196,8 +196,8 @@ pipeline {
 
             environment {
                 VERCEL_TOKEN      = credentials('vercel-token')
-                RENDER_SERVICE_ID = credentials('render-service-id')
-                RENDER_API_KEY    = credentials('render-api-key')
+                RENDER_SERVICE_ID = credentials('RENDER_SERVICE_ID')
+                RENDER_API_KEY    = credentials('RENDER_API_KEY')
             }
 
             steps {
