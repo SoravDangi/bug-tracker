@@ -1,7 +1,11 @@
 import { Bug } from "../types/bug";
 
 if (!process.env.NEXT_PUBLIC_API_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is required but not set.");
+  if (process.env.NODE_ENV === "test") {
+    process.env.NEXT_PUBLIC_API_URL = "http://localhost:10000";
+  } else {
+    throw new Error("NEXT_PUBLIC_API_URL is required but not set.");
+  }
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
