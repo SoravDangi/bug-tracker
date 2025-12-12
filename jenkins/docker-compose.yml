@@ -49,6 +49,20 @@ services:
       - PORT=10000
     networks:
       - jenkins
+  frontend:
+    build:
+      context: ../bugtracker-frontend
+      args:
+        NEXT_PUBLIC_API_URL: "http://backend:10000"
+    container_name: frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: "http://backend:10000"
+    networks:
+      - jenkins
 
 networks:
   jenkins:

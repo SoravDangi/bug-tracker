@@ -99,8 +99,20 @@ pipeline {
                 }
             }
             steps {
-                sh 'docker compose up --build -d'
-            }
+        sh """
+            echo '=== Building Frontend With NEXT_PUBLIC_API_URL ==='
+            docker build \
+              --build-arg NEXT_PUBLIC_API_URL=http://backend:10000 \
+              -t bugtracker-frontend ./bugtracker-frontend
+
+            echo '=== Building Backend ==='
+            docker build -t bugtracker-backend ./bugtracker-backend
+
+            echo '=== Starting Services With Compose ==='
+            docker compose up -d
+        """
+    }
+
         }
 
         stage('API Tests') {
@@ -153,7 +165,7 @@ pipeline {
             }
             environment {
                 NEXT_PUBLIC_API_URL = "http://backend:10000"
-                
+
             }
             steps{
                 dir('tests-e2e'){

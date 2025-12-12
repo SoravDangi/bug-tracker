@@ -8,7 +8,7 @@ RUN npm install
 COPY . .
 
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 RUN echo "test-results.xml" >> .dockerignore
 RUN npm run build
