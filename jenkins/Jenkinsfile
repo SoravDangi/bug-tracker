@@ -3,7 +3,6 @@ pipeline {
 
     stages {
 
-
         stage('Execute Unit Tests') {
             parallel {
 
@@ -15,7 +14,6 @@ pipeline {
                             reuseNode true
                         }
                     }
-
                     steps {
                         script {
                             sh 'mkdir -p $WORKSPACE/.gocache'
@@ -37,18 +35,14 @@ pipeline {
                             }
                         }
                     }
-
                     post {
                         always {
                             junit 'bugtracker-backend/test-results.xml'
-
-                            publishHTML(
-                                target: [
-                                    reportDir: 'bugtracker-backend/reports',
-                                    reportFiles: 'coverage.html',
-                                    reportName: 'Backend Coverage Report'
-                                ]
-                            )
+                            publishHTML target: [
+                                reportDir: 'bugtracker-backend/reports',
+                                reportFiles: 'coverage.html',
+                                reportName: 'Backend Coverage Report'
+                            ]
                         }
                     }
                 }
@@ -60,7 +54,6 @@ pipeline {
                             reuseNode true
                         }
                     }
-
                     steps {
                         dir('bugtracker-frontend') {
                             sh '''
@@ -72,23 +65,20 @@ pipeline {
                             '''
                         }
                     }
-
                     post {
                         always {
                             junit 'bugtracker-frontend/test-results.xml'
-                            publishHTML(
-                                target: [
-                                    reportDir: 'bugtracker-frontend/reports/coverage',
-                                    reportFiles: 'index.html',
-                                    reportName: 'Frontend Coverage Report'
-                                ]
-                            )
+                            publishHTML target: [
+                                reportDir: 'bugtracker-frontend/reports/coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Frontend Coverage Report'
+                            ]
                         }
                     }
                 }
 
-            } // end parallel
-        } // end Execute Unit Tests
+            }
+        }
 
         stage('Launch Applications') {
             agent {
@@ -99,20 +89,19 @@ pipeline {
                 }
             }
             steps {
-        sh """
-            echo '=== Building Frontend With NEXT_PUBLIC_API_URL ==='
-            docker build \
-              --build-arg NEXT_PUBLIC_API_URL=http://backend:10000 \
-              -t bugtracker-frontend ./bugtracker-frontend
+                sh """
+                    echo '=== Building Frontend ==='
+                    docker build \
+                      --build-arg NEXT_PUBLIC_API_URL=http://backend:10000 \
+                      -t bugtracker-frontend ./bugtracker-frontend
 
-            echo '=== Building Backend ==='
-            docker build -t bugtracker-backend ./bugtracker-backend
+                    echo '=== Building Backend ==='
+                    docker build -t bugtracker-backend ./bugtracker-backend
 
-            echo '=== Starting Services With Compose ==='
-            docker compose up -d
-        """
-    }
-
+                    echo '=== Starting Services ==='
+                    docker compose up -d
+                """
+            }
         }
 
         stage('API Tests') {
@@ -130,12 +119,8 @@ pipeline {
 
             steps {
                 dir('tests-api') {
-                    
                     echo "Waiting for backend on port 10000..."
-
-                    // Correct wait-port usage
                     sh 'npx wait-port 127.0.0.1:10000 -t 30000'
-
                     sh 'npm ci'
                     sh 'npx playwright test'
                 }
@@ -144,110 +129,105 @@ pipeline {
             post {
                 always {
                     junit 'tests-api/test-results/results.xml'
-                    publishHTML(
-                        target: [
-                            reportDir: 'tests-api/playwright-report',
-                            reportFiles: 'index.html',
-                            reportName: 'Playwright API Test Report'
-                        ]
-                    )
+                    publishHTML target: [
+                        reportDir: 'tests-api/playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Playwright API Test Report'
+                    ]
                 }
             }
         }
-        stage('E2E Tests'){
-            agent{
-                docker{
+
+        stage('E2E Tests') {
+            agent {
+                docker {
                     image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
                     reuseNode true
                     args '-u 0 --network=host'
                 }
-
             }
             environment {
                 NEXT_PUBLIC_API_URL = "http://backend:10000"
-
             }
-            steps{
-                dir('tests-e2e'){
+            steps {
+                dir('tests-e2e') {
                     sh 'npm ci'
                     sh 'npx playwright test'
                 }
             }
-            post{
-                always{
+            post {
+                always {
                     junit 'tests-e2e/test-results/results.xml'
-                    publishHTML (target: [
+                    publishHTML target: [
                         reportDir: 'tests-e2e/playwright-report',
                         reportFiles: 'index.html',
-                        reportName: 'Playwright E2E test Report'
-                    ])
+                        reportName: 'Playwright E2E Test Report'
+                    ]
                 }
             }
         }
-        stage('Performance Tests'){
-            agent{
-                docker{
+
+        stage('Performance Tests') {
+            agent {
+                docker {
                     image 'grafana/k6:latest'
                     reuseNode true
                     args '--network=host -u root --entrypoint=""'
                 }
             }
-            steps{
-                dir('tests-perf'){
+            steps {
+                dir('tests-perf') {
                     sh 'k6 run script.js'
                 }
             }
-            post{
-                always{
-                    publishHTML (target: [
+            post {
+                always {
+                    publishHTML target: [
                         reportDir: 'tests-perf',
                         reportFiles: 'perf-results.html',
                         reportName: 'Performance Test Results Report'
-                    ])
+                    ]
                 }
             }
         }
-    } // end stages
 
         stage('Deploy to Vercel & Render') {
-    agent any
+            agent any
 
-    environment {
-        // You must set these in Jenkins Credentials!
-        VERCEL_TOKEN = credentials('vercel-token')
-        RENDER_SERVICE_ID = credentials('render-service-id')
-        RENDER_API_KEY = credentials('render-api-key')
-    }
+            environment {
+                VERCEL_TOKEN      = credentials('vercel-token')
+                RENDER_SERVICE_ID = credentials('render-service-id')
+                RENDER_API_KEY    = credentials('render-api-key')
+            }
 
-    steps {
-        script {
+            steps {
+                script {
+                    echo "=== Deploying Frontend to Vercel ==="
+                    sh """
+                        curl -X POST "https://api.vercel.com/v13/deployments" \
+                          -H "Authorization: Bearer $VERCEL_TOKEN" \
+                          -H "Content-Type: application/json" \
+                          -d '{
+                                "name": "bugtracker-frontend",
+                                "gitSource": {
+                                    "type": "github",
+                                    "repo": "YOUR_GITHUB_USERNAME/bugtracker-frontend"
+                                }
+                              }'
+                    """
 
-            echo "=== Deploying Frontend to Vercel ==="
-            sh """
-                curl -X POST "https://api.vercel.com/v13/deployments" \
-                  -H "Authorization: Bearer $VERCEL_TOKEN" \
-                  -H "Content-Type: application/json" \
-                  -d '{
-                        "name": "bugtracker-frontend",
-                        "gitSource": {
-                            "type": "github",
-                            "repo": "YOUR_GITHUB_USERNAME/bugtracker-frontend"
-                        }
-                      }'
-            """
-
-            echo "=== Triggering Backend Deploy to Render ==="
-            sh """
-                curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
-                  -H "Authorization: Bearer $RENDER_API_KEY" \
-                  -H "Accept: application/json" \
-                  -d '{}'
-            """
+                    echo "=== Triggering Render Backend Deploy ==="
+                    sh """
+                        curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+                          -H "Authorization: Bearer $RENDER_API_KEY" \
+                          -H "Accept: application/json" \
+                          -d '{}'
+                    """
+                }
+            }
         }
-    }
-}
 
-
+    } // END stages
 
     post {
         always {
