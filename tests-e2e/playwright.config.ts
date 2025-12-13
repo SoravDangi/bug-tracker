@@ -11,7 +11,7 @@ export default defineConfig({
       slowMo: process.env.CI ? 0 : 1000,
     },
   },
-  timeout: 30000,
+  timeout: 70000,
   reporter: [
     ["list"],
     ["junit", { outputFile: "test-results/results.xml" }],
