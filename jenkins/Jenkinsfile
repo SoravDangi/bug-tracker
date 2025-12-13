@@ -211,6 +211,12 @@ pipeline {
         }
 
         stage('Deploy Frontend to Vercel') {
+            agent {
+                docker {
+                    image 'node:20-alpine'
+                    reuseNode true
+                }
+            }
             environment {
                 VERCEL_TOKEN = credentials('vercel-token')
             }
