@@ -227,16 +227,16 @@ pipeline {
                 dir('bugtracker-frontend') {
 
                     sh '''
-                      npm install -g vercel
-
-                      vercel pull --yes \
+                      npm ci
+                      
+                      npx vercel pull --yes \
                         --environment=production \
                         --token=$VERCEL_TOKEN
 
-                      vercel build --prod \
+                      npx vercel build --prod \
                         --token=$VERCEL_TOKEN
 
-                      vercel deploy --prebuilt --prod \
+                      npx vercel deploy --prebuilt --prod \
                         --token=$VERCEL_TOKEN
                     '''
                 }
