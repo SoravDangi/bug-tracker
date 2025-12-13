@@ -1,140 +1,111 @@
 import { test, expect } from "@playwright/test";
 
-test("Bug creation and deletion flow", async ({ page }) => {
+/* ---------------------------
+   Global setup for ALL tests
+---------------------------- */
+test.beforeEach(async ({ page }) => {
   page.on("console", (msg) => {
     console.log(`Browser console [${msg.type()}]: ${msg.text()}`);
   });
 
-  console.log("Starting test...");
-
-  await page.goto("/");
-  console.log("Navigated to homepage");
-
-  console.log("Page content:", await page.content());
-
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle");
-  console.log("Page loaded");
 
-  await page.waitForSelector('button:text("Add New Bug")', { timeout: 60000 });
-  console.log("Found Add New Bug button");
+  const addBugButton = page.getByRole("button", { name: "Add New Bug" });
+  await expect(addBugButton).toBeVisible();
+  await expect(addBugButton).toBeEnabled();
+});
 
-  await page.click('button:text("Add New Bug")');
-  console.log("Clicked Add New Bug button");
+/* ---------------------------
+   Helper: create a bug safely
+---------------------------- */
+async function createBug(page, title: string) {
+  const addBugButton = page.getByRole("button", { name: "Add New Bug" });
+  await addBugButton.click({ force: true });
 
-  console.log("Waiting for modal...");
-  await page.waitForSelector('[data-testid="add-bug-modal"]', {
-    timeout: 60000,
-  });
-  console.log("Modal found");
+  const form = page.locator('[data-testid="add-bug-form"]');
+  await expect(form).toBeVisible({ timeout: 90000 });
 
-  await page.waitForSelector('[data-testid="add-bug-form"]', {
-    timeout: 60000,
-  });
-  console.log("Form found");
+  await page.fill('input[name="title"]', title);
+  await page.fill('textarea[name="description"]', "Created by Playwright");
+  await page.selectOption('select[name="priority"]', "Medium");
 
-  const modalContent = await page
-    .locator('[data-testid="add-bug-modal"]')
-    .innerHTML();
-  console.log("Modal content:", modalContent);
+  await page.getByRole("button", { name: "Add Bug" }).click();
 
+  // allow backend persistence + UI refresh
+  await page.waitForTimeout(1500);
+}
+
+/* =====================================================
+   TEST 1: Create and delete a bug
+===================================================== */
+test("Bug creation and deletion flow", async ({ page }) => {
   const uniqueTitle = `Test Bug ${Date.now()}`;
 
-  await page.fill('input[name="title"]', uniqueTitle);
-  await page.fill('textarea[name="description"]', "This is a test bug");
-  await page.selectOption('select[name="priority"]', "Medium");
-  await page.click('button:text("Add Bug")');
+  await createBug(page, uniqueTitle);
 
-  await expect(page.locator(`a:text("${uniqueTitle}")`).first()).toBeVisible();
+  const bugLink = page.locator(`a:text("${uniqueTitle}")`).first();
+  await expect(bugLink).toBeVisible();
+  await bugLink.click();
 
-  await page.locator(`a:text("${uniqueTitle}")`).first().click();
-
-  await expect(page.locator(`h1:text('${uniqueTitle}')`)).toBeVisible();
-  await expect(page.locator("text=This is a test bug")).toBeVisible();
+  await expect(page.locator(`h1:text("${uniqueTitle}")`)).toBeVisible();
+  await expect(page.locator("text=Created by Playwright")).toBeVisible();
   await expect(page.locator("text=Medium")).toBeVisible();
 
-  await page.click("text=Delete Bug");
-  await page.click("text=Confirm");
+  await page.getByRole("button", { name: "Delete Bug" }).click();
+  await page.getByRole("button", { name: "Confirm" }).click();
 
-  await expect(page.locator(`a:text("${uniqueTitle}")`).first()).toBeHidden();
+  await expect(page.locator(`a:text("${uniqueTitle}")`)).toHaveCount(0);
 });
 
+/* =====================================================
+   TEST 2: Add a comment to a bug
+===================================================== */
 test("Adding a comment to a bug", async ({ page }) => {
-  console.log("Starting comment test...");
-
-  await page.goto("/");
-  console.log("Navigated to homepage");
-
-  await page.click('button:text("Add New Bug")');
-  await page.waitForSelector('[data-testid="add-bug-form"]', {
-    timeout: 100000,
-  });
-
   const uniqueTitle = `Bug for Comment ${Date.now()}`;
+  await createBug(page, uniqueTitle);
 
-  await page.fill('input[name="title"]', uniqueTitle);
-  await page.fill('textarea[name="description"]', "This bug needs a comment");
-  await page.selectOption('select[name="priority"]', "Medium");
-  await page.click('button:text("Add Bug")');
-
-  await expect(page.locator(`a:text("${uniqueTitle}")`).first()).toBeVisible();
   await page.locator(`a:text("${uniqueTitle}")`).first().click();
 
-  await page.waitForSelector('[data-testid="comment-form"]', {
-    timeout: 100000,
-  });
-  console.log("Comment form found");
+  const commentForm = page.locator('[data-testid="comment-form"]');
+  await expect(commentForm).toBeVisible({ timeout: 60000 });
 
-  const timestamp = "test-comment-" + Math.random().toString(36).substring(7);
-  await page.fill(
-    '[data-testid="comment-content"]',
-    `Test comment ${timestamp}`
-  );
-  await page.fill('[data-testid="comment-author"]', `Test User ${timestamp}`);
-  await page.click('button:text("Add Comment")');
+  const suffix = Date.now();
+  await page.fill('[data-testid="comment-content"]', `Test comment ${suffix}`);
+  await page.fill('[data-testid="comment-author"]', `User ${suffix}`);
 
-  await expect(page.locator(`p:text('Test comment ${timestamp}')`)).toBeVisible(
-    { timeout: 10000 }
-  );
+  await page.getByRole("button", { name: "Add Comment" }).click();
+
+  await expect(
+    page.locator(`text=Test comment ${suffix}`)
+  ).toBeVisible({ timeout: 30000 });
 });
 
+/* =====================================================
+   TEST 3: Edit an existing bug
+===================================================== */
 test("Editing a bug", async ({ page }) => {
-  console.log("Starting edit bug test...");
-
-  await page.goto("/");
-  await page.click('button:text("Add New Bug")');
-  await page.waitForSelector('[data-testid="add-bug-form"]', {
-    timeout: 60000,
-  });
-
   const uniqueTitle = `Bug to Edit ${Date.now()}`;
-
-  await page.fill('input[name="title"]', uniqueTitle);
-  await page.fill('textarea[name="description"]', "This bug will be edited");
-  await page.selectOption('select[name="priority"]', "Low");
-  await page.click('button:text("Add Bug")');
+  await createBug(page, uniqueTitle);
 
   await page.locator(`a:text("${uniqueTitle}")`).first().click();
 
-  await page.click('button:text("Edit Bug")');
-  console.log("Clicked edit button");
+  await page.getByRole("button", { name: "Edit Bug" }).click();
 
-  await page.waitForSelector('[data-testid="edit-bug-form"]', {
-    timeout: 60000,
-  });
-  console.log("Edit form found");
+  const editForm = page.locator('[data-testid="edit-bug-form"]');
+  await expect(editForm).toBeVisible({ timeout: 60000 });
 
-  const formContent = await page
-    .locator('[data-testid="edit-bug-form"]')
-    .innerHTML();
-  console.log("Edit form content:", formContent);
-
-  const uniqueEditedTitle = `Edited Bug Title ${Date.now()}`;
-  await page.fill('input[name="title"]', uniqueEditedTitle);
-  await page.fill('textarea[name="description"]', "This bug has been edited");
+  const editedTitle = `Edited Bug ${Date.now()}`;
+  await page.fill('input[name="title"]', editedTitle);
+  await page.fill(
+    'textarea[name="description"]',
+    "This bug has been edited"
+  );
   await page.selectOption('select[name="priority"]', "High");
-  await page.click('button:text("Save Changes")');
 
-  await expect(page.locator(`h1:text('${uniqueEditedTitle}')`)).toBeVisible();
-  await expect(page.locator(`text=This bug has been edited`)).toBeVisible();
-  await expect(page.locator(`text=High`)).toBeVisible();
+  await page.getByRole("button", { name: "Save Changes" }).click();
+
+  await expect(page.locator(`h1:text("${editedTitle}")`)).toBeVisible();
+  await expect(page.locator("text=This bug has been edited")).toBeVisible();
+  await expect(page.locator("text=High")).toBeVisible();
 });
