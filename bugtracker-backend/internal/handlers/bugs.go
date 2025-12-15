@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"os"
 
 	"github.com/gorilla/mux"
 
@@ -196,6 +197,7 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 	// 2. Delete screenshot files from disk
 	for _, s := range screenshots {
 		_ = os.Remove(s.FilePath) // ignore error if already gone
+		_ = db.DeleteScreenshotsByBugID(bugID)
 	}
 
 	// 3. Delete screenshot records from DB

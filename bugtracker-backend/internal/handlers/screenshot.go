@@ -2,60 +2,50 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"net/http"
+	"strconv"
 
+	"bugtracker-backend/internal/db"
 	"bugtracker-backend/internal/models"
-	"go.etcd.io/bbolt"
 )
 
-var screenshotsBucket = []byte("screenshots")
+func UploadScreenshot(w http.ResponseWriter, r *http.Request) {
+	bugID, _ := strconv.Atoi(r.FormValue("bugId"))
 
-func GetScreenshotsByBugID(bugID int) ([]models.Screenshot, error) {
-	var screenshots []models.Screenshot
+	filePath := r.FormValue("filePath") // already saved by middleware
 
-	err := db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket(screenshotsBucket)
-		if b == nil {
-			return nil
-		}
+	s := &models.Screenshot{
+		BugID:    bugID,
+		FilePath: filePath,
+	}
 
-		return b.ForEach(func(_, v []byte) error {
-			var s models.Screenshot
-			if err := json.Unmarshal(v, &s); err != nil {
-				return err
-			}
-			if s.BugID == bugID {
-				screenshots = append(screenshots, s)
-			}
-			return nil
-		})
-	})
+	if err := db.CreateScreenshot(s); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	return screenshots, err
+	json.NewEncoder(w).Encode(s)
 }
 
-func DeleteScreenshotsByBugID(bugID int) error {
-	return db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket(screenshotsBucket)
-		if b == nil {
-			return nil
-		}
+func GetScreenshots(w http.ResponseWriter, r *http.Request) {
+	bugID, _ := strconv.Atoi(r.URL.Query().Get("bugId"))
 
-		var keysToDelete [][]byte
+	data, err := db.GetScreenshotsByBugID(bugID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-		b.ForEach(func(k, v []byte) error {
-			var s models.Screenshot
-			if json.Unmarshal(v, &s) == nil && s.BugID == bugID {
-				keysToDelete = append(keysToDelete, k)
-			}
-			return nil
-		})
+	json.NewEncoder(w).Encode(data)
+}
 
-		for _, k := range keysToDelete {
-			if err := b.Delete(k); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+func DeleteScreenshot(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.URL.Query().Get("id"))
+
+	if err := db.DeleteScreenshot(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
