@@ -90,7 +90,7 @@ pipeline {
                                 npm ci
 
                                 # Run frontend unit tests
-                                npm test -- --json --outputFile=test-results.json || true
+                                npm test -- --json --outputFile=test-results.json
 
                                 # Save coverage results for reporting
                                 mkdir -p reports
