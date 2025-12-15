@@ -178,41 +178,56 @@ func UpdateBug(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteBug(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, "invalid bug ID", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "invalid bug ID",
+		})
 		return
 	}
 
-	// 1. Get screenshots linked to this bug
+	// 1. Fetch screenshots for this bug
 	screenshots, err := db.GetScreenshotsByBugID(idInt)
 	if err != nil {
-		http.Error(w, "failed to fetch screenshots", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "failed to fetch screenshots",
+		})
 		return
 	}
 
 	// 2. Delete screenshot files from disk
 	for _, s := range screenshots {
-		_ = os.Remove(s.FilePath) // ignore error if file does not exist
+		_ = os.Remove(s.FilePath)
 	}
 
-	// 3. Delete screenshot records from DB
+	// 3. Delete screenshot records
 	if err := db.DeleteScreenshotsByBugID(idInt); err != nil {
-		http.Error(w, "failed to delete screenshots", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "failed to delete screenshots",
+		})
 		return
 	}
 
-	// 4. Delete the bug itself
+	// 4. Delete bug
 	if err := db.DeleteBug(idInt); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "bug not found",
+		})
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 
 
 
