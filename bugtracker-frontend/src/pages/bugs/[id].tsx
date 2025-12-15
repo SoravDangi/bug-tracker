@@ -9,6 +9,8 @@ import { updateBug } from "@/api/bugs";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import { deleteBug } from "@/api/bugs";
 import { API_BASE_URL } from "@/config";
+import ScreenshotSection from "@/components/screenshotsection";
+
 
 export default function BugDetail() {
   const router = useRouter();
@@ -164,6 +166,9 @@ export default function BugDetail() {
               {bug.description}
             </p>
           </div>
+
+          {bug && <ScreenshotSection bugId={bug.id} />}
+
 
           <CommentSection
             bugId={bug.id}

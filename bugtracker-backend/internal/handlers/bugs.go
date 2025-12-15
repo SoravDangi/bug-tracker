@@ -20,6 +20,10 @@ func RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/bugs/{id}", GetBug).Methods("GET")
 	r.HandleFunc("/bugs/{id}", UpdateBug).Methods("PUT")
 	r.HandleFunc("/bugs/{id}", DeleteBug).Methods("DELETE")
+	r.HandleFunc("/bugs/{id}/screenshots", UploadScreenshot).Methods("POST")
+    r.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET")
+    r.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE")
+
 	RegisterCommentRoutes(r)
 }
 
@@ -176,31 +180,39 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	w.Header().Set("Content-Type", "application/json")
-
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "invalid bug ID",
-		})
+		http.Error(w, "invalid bug ID", http.StatusBadRequest)
 		return
 	}
 
+	// 1. Get screenshots linked to this bug
+	screenshots, err := db.GetScreenshotsByBugID(idInt)
+	if err != nil {
+		http.Error(w, "failed to fetch screenshots", http.StatusInternalServerError)
+		return
+	}
+
+	// 2. Delete screenshot files from disk
+	for _, s := range screenshots {
+		_ = os.Remove(s.FilePath) // ignore error if already gone
+	}
+
+	// 3. Delete screenshot records from DB
+	if err := db.DeleteScreenshotsByBugID(idInt); err != nil {
+		http.Error(w, "failed to delete screenshots", http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Delete the bug itself
 	if err := db.DeleteBug(idInt); err != nil {
-		status := http.StatusInternalServerError
-		if err.Error() == "bug not found" {
-			status = http.StatusNotFound
-		}
-		w.WriteHeader(status)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": err.Error(),
-		})
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 
 func DeleteAllBugs(w http.ResponseWriter, r *http.Request) {
 	log.Printf("DeleteAllBugs called from %s", r.RemoteAddr)

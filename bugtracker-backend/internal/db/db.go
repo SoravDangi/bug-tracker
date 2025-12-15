@@ -19,6 +19,11 @@ var (
 	bugsBucket     = []byte("bugs")
 	commentsBucket = []byte("comments")
 	counterBucket  = []byte("counter")
+    
+	// new bucket for screenshot
+	screenshotsBucket       = []byte("screenshots")
+	screenshotCounterBucket = []byte("screenshot_counter")
+
 	databasePath   = getDBPath()
 )
 
@@ -41,6 +46,23 @@ func Init() error {
 	}
 
 	err = db.Update(func(tx *bbolt.Tx) error {
+
+        _, err = tx.CreateBucketIfNotExists(screenshotsBucket)
+        if err != nil {
+	      return fmt.Errorf("create screenshots bucket: %w", err)
+        }
+
+        b, err = tx.CreateBucketIfNotExists(screenshotCounterBucket)
+        if err != nil {
+	      return fmt.Errorf("create screenshot counter bucket: %w", err)
+        }
+
+        if b.Get([]byte("lastScreenshotID")) == nil {
+	      if err := b.Put([]byte("lastScreenshotID"), itob(0)); err != nil {
+		     return fmt.Errorf("initialize screenshot counter: %w", err)
+	        }
+        }
+ 		
 		_, err := tx.CreateBucketIfNotExists(bugsBucket)
 		if err != nil {
 			return fmt.Errorf("create bugs bucket: %w", err)

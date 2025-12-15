@@ -75,6 +75,12 @@ func createServer() *http.Server {
     api := r.PathPrefix("/api").Subrouter()
     handlers.RegisterRoutes(api)
 
+    r.PathPrefix("/uploads/").
+	    Handler(http.StripPrefix("/uploads/",
+		    http.FileServer(http.Dir("uploads"))))
+
+
+
     // CORS
     c := cors.New(cors.Options{
         AllowedOrigins:   []string{"*"},
