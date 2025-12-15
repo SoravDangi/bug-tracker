@@ -21,9 +21,11 @@ func RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/bugs/{id}", GetBug).Methods("GET")
 	r.HandleFunc("/bugs/{id}", UpdateBug).Methods("PUT")
 	r.HandleFunc("/bugs/{id}", DeleteBug).Methods("DELETE")
-	r.HandleFunc("/bugs/{id}/screenshots", UploadScreenshot).Methods("POST")
-    r.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET")
-    r.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE")
+
+	r.HandleFunc("/bugs/{id}/screenshots", UploadScreenshot).Methods("POST", "OPTIONS")
+    r.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET", "OPTIONS")
+    r.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE", "OPTIONS")
+
 
 	RegisterCommentRoutes(r)
 }
