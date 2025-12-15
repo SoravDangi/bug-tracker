@@ -1,12 +1,24 @@
 pipeline {
+
+    // Jenkins can run this pipeline on any available worker machine
     agent any
 
     stages {
 
+        // =========================
+        // STAGE 1: RUN ALL UNIT TESTS
+        // =========================
         stage('Execute Unit Tests') {
+
+            // Backend and frontend unit tests run at the same time to save time
             parallel {
 
+                // -------------------------
+                // BACKEND UNIT TESTS (Go)
+                // -------------------------
                 stage('Unit Tests - Backend') {
+
+                    // Use a Go-specific Docker image to run backend tests
                     agent {
                         docker {
                             image 'snakee/golang-junit:1.21'
@@ -14,27 +26,38 @@ pipeline {
                             reuseNode true
                         }
                     }
+
                     steps {
                         script {
+                            // Create a cache folder to speed up Go dependency downloads
                             sh 'mkdir -p $WORKSPACE/.gocache'
 
+                            // Move into backend project folder
                             dir('bugtracker-backend') {
                                 sh '''
+                                    // Set cache locations so builds are faster
                                     export GOMODCACHE=$WORKSPACE/.gocache
                                     export GOCACHE=$WORKSPACE/.gocache
 
+                                    // Download backend dependencies
                                     go mod download
+
+                                    // Run backend tests and convert results into a Jenkins-readable format
                                     go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
+                                    // Generate code coverage report
                                     go test -coverprofile=coverage.out -covermode=atomic ./...
                                     go tool cover -html=coverage.out -o coverage.html
 
+                                    // Store coverage report so Jenkins can display it
                                     mkdir -p reports
                                     mv coverage.html reports/
                                 '''
                             }
                         }
                     }
+
+                    // Always publish results, even if tests fail
                     post {
                         always {
                             junit 'bugtracker-backend/test-results.xml'
@@ -47,24 +70,36 @@ pipeline {
                     }
                 }
 
+                // -------------------------
+                // FRONTEND UNIT TESTS (React / Next.js)
+                // -------------------------
                 stage('Unit Tests - Frontend') {
+
+                    // Use Node.js Docker image for frontend tests
                     agent {
                         docker {
                             image 'node:20-alpine'
                             reuseNode true
                         }
                     }
+
                     steps {
                         dir('bugtracker-frontend') {
                             sh '''
+                                // Install frontend dependencies
                                 npm ci
+
+                                // Run frontend unit tests
                                 npm test -- --json --outputFile=test-results.json
 
+                                // Save coverage results for reporting
                                 mkdir -p reports
                                 mv coverage reports/
                             '''
                         }
                     }
+
+                    // Always publish frontend test and coverage results
                     post {
                         always {
                             junit 'bugtracker-frontend/test-results.xml'
@@ -76,11 +111,15 @@ pipeline {
                         }
                     }
                 }
-
             }
         }
 
+        // =========================
+        // STAGE 2: START APPLICATIONS
+        // =========================
         stage('Launch Applications') {
+
+            // Docker is required to build and start services
             agent {
                 docker {
                     image 'docker:27.5.1'
@@ -88,23 +127,32 @@ pipeline {
                     args '-v /var/run/docker.sock:/var/run/docker.sock -u 0'
                 }
             }
+
             steps {
                 sh """
+                    // Build frontend application image
                     echo '=== Building Frontend ==='
                     docker build \
                       --build-arg NEXT_PUBLIC_API_URL=http://backend:10000 \
                       -t bugtracker-frontend ./bugtracker-frontend
 
+                    // Build backend application image
                     echo '=== Building Backend ==='
                     docker build -t bugtracker-backend ./bugtracker-backend
 
+                    // Start frontend and backend together
                     echo '=== Starting Services ==='
                     docker compose up -d
                 """
             }
         }
 
+        // =========================
+        // STAGE 3: API TESTS
+        // =========================
         stage('API Tests') {
+
+            // Playwright image used for automated API testing
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
@@ -114,18 +162,26 @@ pipeline {
             }
 
             environment {
+                // Base URL for API testing
                 PLAYWRIGHT_TEST_BASE_URL = "http://localhost:10000/api/"
             }
 
             steps {
                 dir('tests-api') {
+
+                    // Wait until backend is fully running
                     echo "Waiting for backend on port 10000..."
                     sh 'npx wait-port 127.0.0.1:10000 -t 30000'
+
+                    // Install test dependencies
                     sh 'npm ci'
+
+                    // Run API tests
                     sh 'npx playwright test'
                 }
             }
 
+            // Publish API test results
             post {
                 always {
                     junit 'tests-api/test-results/results.xml'
@@ -138,7 +194,12 @@ pipeline {
             }
         }
 
+        // =========================
+        // STAGE 4: END-TO-END TESTS
+        // =========================
         stage('E2E Tests') {
+
+            // Browser-based tests using Playwright
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
@@ -146,15 +207,18 @@ pipeline {
                     args '-u 0 --network=host'
                 }
             }
+
             environment {
                 NEXT_PUBLIC_API_URL = "http://backend:10000"
             }
+
             steps {
                 dir('tests-e2e') {
                     sh 'npm ci'
                     sh 'npx playwright test'
                 }
             }
+
             post {
                 always {
                     junit 'tests-e2e/test-results/results.xml'
@@ -167,7 +231,12 @@ pipeline {
             }
         }
 
+        // =========================
+        // STAGE 5: PERFORMANCE TESTS
+        // =========================
         stage('Performance Tests') {
+
+            // Load testing using k6
             agent {
                 docker {
                     image 'grafana/k6:latest'
@@ -175,11 +244,13 @@ pipeline {
                     args '--network=host -u root --entrypoint=""'
                 }
             }
+
             steps {
                 dir('tests-perf') {
                     sh 'k6 run script.js'
                 }
             }
+
             post {
                 always {
                     publishHTML target: [
@@ -190,16 +261,22 @@ pipeline {
                 }
             }
         }
-        
+
+        // =========================
+        // STAGE 6: DEPLOY BACKEND
+        // =========================
         stage('Deploy Backend to Render') {
+
+            // Secure credentials stored in Jenkins
             environment {
                 RENDER_API_KEY = credentials('RENDER_API_KEY')
                 RENDER_BACKEND_SERVICE_ID = credentials('RENDER_SERVICE_ID')
             }
 
             steps {
-                echo '🚀 Deploying Backend to Render...'
+                echo 'Deploying Backend to Render...'
 
+                // Trigger backend deployment via Render API
                 sh '''
                   curl -X POST \
                     -H "Authorization: Bearer $RENDER_API_KEY" \
@@ -210,32 +287,39 @@ pipeline {
             }
         }
 
+        // =========================
+        // STAGE 7: DEPLOY FRONTEND
+        // =========================
         stage('Deploy Frontend to Vercel') {
+
             agent {
                 docker {
                     image 'node:20-alpine'
                     reuseNode true
                 }
             }
+
             environment {
                 VERCEL_TOKEN = credentials('vercel-token')
             }
 
             steps {
-                echo '🚀 Deploying Frontend to Vercel...'
+                echo 'Deploying Frontend to Vercel...'
 
                 dir('bugtracker-frontend') {
-
                     sh '''
                       npm ci
-                      
+
+                      // Pull project settings from Vercel
                       npx vercel pull --yes \
                         --environment=production \
                         --token=$VERCEL_TOKEN
 
+                      // Build production version
                       npx vercel build --prod \
                         --token=$VERCEL_TOKEN
 
+                      // Deploy to production
                       npx vercel deploy --prebuilt --prod \
                         --token=$VERCEL_TOKEN
                     '''
@@ -243,7 +327,11 @@ pipeline {
             }
         }
 
+        // =========================
+        // STAGE 8: POST-DEPLOYMENT TESTS
+        // =========================
         stage ('Post Deployment Tests') {
+
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
@@ -251,8 +339,8 @@ pipeline {
                     args '-u 0'
                 }
             }
-            environment {
 
+            environment {
                 PLAYWRIGHT_TEST_BASE_URL = "https://bugtracker-frontend.vercel.app/"
                 NEXT_PUBLIC_API_URL = "https://bugtracker-frontend.vercel.app/"
             }
@@ -262,14 +350,16 @@ pipeline {
                    sh '''
                      npm ci
 
+                     // Wait until production site is live
                      echo "Waiting for production frontend..."
                      npx wait-on $PLAYWRIGHT_TEST_BASE_URL
 
+                     // Run final tests on live system
                      npx playwright test
                     '''
                 }
             }
-            
+
             post {
                 always {
                     junit 'tests-e2e/test-results/results.xml'
@@ -280,12 +370,15 @@ pipeline {
                     ]
                 }
             }
-        } 
-
+        }
     }
-        
+
+    // =========================
+    // CLEAN UP
+    // =========================
     post {
         always {
+            // Remove temporary files after pipeline finishes
             cleanWs()
         }
     }
