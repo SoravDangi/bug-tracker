@@ -196,8 +196,7 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Delete screenshot files from disk
 	for _, s := range screenshots {
-		_ = os.Remove(s.FilePath) // ignore error if already gone
-		_ = db.DeleteScreenshotsByBugID(bugID)
+		_ = os.Remove(s.FilePath) // ignore error if file does not exist
 	}
 
 	// 3. Delete screenshot records from DB
@@ -214,6 +213,7 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 
 
 func DeleteAllBugs(w http.ResponseWriter, r *http.Request) {
