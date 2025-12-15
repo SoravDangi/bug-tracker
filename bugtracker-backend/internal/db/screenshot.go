@@ -2,7 +2,7 @@ package db
 
 import (
 	"encoding/json"
-	"fmt"
+	
 
 	"bugtracker-backend/internal/models"
 
