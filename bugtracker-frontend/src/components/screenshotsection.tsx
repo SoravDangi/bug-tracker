@@ -22,7 +22,7 @@ export default function ScreenshotSection({ bugId }: Props) {
   const loadScreenshots = async () => {
     try {
       const data = await getScreenshots(bugId);
-      setScreenshots(data);
+      setScreenshots(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setError("Failed to load screenshots");
