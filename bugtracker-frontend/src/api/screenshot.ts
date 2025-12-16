@@ -3,20 +3,36 @@ import { API_BASE_URL } from "@/config";
 export interface Screenshot {
   id: number;
   bug_id: number;
-  file_name: string;
   file_path: string;
   created_at: string;
 }
 
-// Upload screenshot
+/**
+ * GET screenshots for a bug
+ */
+export async function getScreenshots(bugId: number): Promise<Screenshot[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/bugs/${bugId}/screenshots`
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch screenshots");
+  }
+
+  return res.json();
+}
+
+/**
+ * UPLOAD screenshot
+ */
 export async function uploadScreenshot(
   bugId: number,
   file: File
-): Promise<Screenshot> {
+): Promise<void> {
   const formData = new FormData();
-  formData.append("screenshot", file);
+  formData.append("file", file);
 
-  const response = await fetch(
+  const res = await fetch(
     `${API_BASE_URL}/api/bugs/${bugId}/screenshots`,
     {
       method: "POST",
@@ -24,36 +40,23 @@ export async function uploadScreenshot(
     }
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to upload screenshot");
+  if (!res.ok) {
+    throw new Error("Screenshot upload failed");
   }
-
-  return response.json();
 }
 
-// Fetch screenshots
-export async function getScreenshots(
-  bugId: number
-): Promise<Screenshot[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/bugs/${bugId}/screenshots`
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch screenshots");
-  }
-
-  return response.json();
-}
-
-// Delete screenshot
+/**
+ * DELETE screenshot
+ */
 export async function deleteScreenshot(id: number): Promise<void> {
-  const response = await fetch(
+  const res = await fetch(
     `${API_BASE_URL}/api/screenshots/${id}`,
-    { method: "DELETE" }
+    {
+      method: "DELETE",
+    }
   );
 
-  if (!response.ok) {
+  if (!res.ok) {
     throw new Error("Failed to delete screenshot");
   }
 }
