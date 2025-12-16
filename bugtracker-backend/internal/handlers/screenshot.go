@@ -81,17 +81,29 @@ func UploadScreenshot(w http.ResponseWriter, r *http.Request) {
 
 
 func GetScreenshots(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	vars := mux.Vars(r)
-	bugID, _ := strconv.Atoi(vars["id"])
+	bugID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid bug ID", http.StatusBadRequest)
+		return
+	}
 
 	screenshots, err := db.GetScreenshotsByBugID(bugID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch screenshots", http.StatusInternalServerError)
 		return
+	}
+
+	// 🔑 IMPORTANT FIX: return [] instead of null
+	if screenshots == nil {
+		screenshots = []models.Screenshot{}
 	}
 
 	json.NewEncoder(w).Encode(screenshots)
 }
+
 
 func DeleteScreenshot(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
