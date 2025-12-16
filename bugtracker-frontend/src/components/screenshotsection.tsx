@@ -6,6 +6,9 @@ import {
   deleteScreenshot,
 } from "@/api/screenshot";
 
+import { API_BASE_URL } from "@/config";
+
+
 interface Props {
   bugId: number;
 }
@@ -83,13 +86,11 @@ export default function ScreenshotSection({ bugId }: Props) {
             className="border rounded p-2 bg-white shadow"
           >
             <img
-              src={`${process.env.NEXT_PUBLIC_API_URL}/${s.file_path}`}
+              src={`${API_BASE_URL}/${s.file_path}`}
               alt="Bug screenshot"
               className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-80"
               onClick={() =>
-                setPreviewUrl(
-                  `${process.env.NEXT_PUBLIC_API_URL}/${s.file_path}`
-                )
+                setPreviewUrl(`${API_BASE_URL}/${s.file_path}`)
               }
             />
 
