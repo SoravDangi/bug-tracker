@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,80 +20,65 @@ func UploadScreenshot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	vars := mux.Vars(r)
-	bugIDStr := vars["id"]
-
-	bugID, err := strconv.Atoi(bugIDStr)
+	bugID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "invalid bug ID",
-		})
+		http.Error(w, "invalid bug id", http.StatusBadRequest)
 		return
 	}
 
-	// Ensure bug exists
-	if _, err := db.GetBug(bugID); err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "bug not found",
-		})
-		return
-	}
-
-	// Parse multipart form
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "failed to parse form",
-		})
-		return
-	}
-
-	file, handler, err := r.FormFile("file")
+	// ✅ REQUIRED: parse multipart form
+	err = r.ParseMultipartForm(10 << 20) // 10MB
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "file is required",
-		})
+		http.Error(w, "failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "file field is required", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	// Create uploads dir if not exists
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	// ✅ Ensure uploads directory exists
+	if err := os.MkdirAll("uploads", 0755); err != nil {
+		http.Error(w, "failed to create uploads directory", http.StatusInternalServerError)
 		return
 	}
 
-	filename := strconv.FormatInt(time.Now().UnixNano(), 10) + "_" + handler.Filename
-	filePath := filepath.Join(uploadDir, filename)
+	filename := fmt.Sprintf(
+		"uploads/%d_%d%s",
+		bugID,
+		time.Now().UnixNano(),
+		filepath.Ext(header.Filename),
+	)
 
-	dst, err := os.Create(filePath)
+	dst, err := os.Create(filename)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "failed to save file", http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
 
-	if _, err := dst.ReadFrom(file); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, "failed to write file", http.StatusInternalServerError)
 		return
 	}
 
 	screenshot := &models.Screenshot{
 		BugID:    bugID,
-		FilePath: filePath,
+		FilePath: filename,
 	}
 
 	if err := db.CreateScreenshot(screenshot); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "failed to save screenshot record", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(screenshot)
 }
+
 
 func GetScreenshots(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
