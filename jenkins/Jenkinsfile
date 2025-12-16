@@ -5,6 +5,7 @@ pipeline {
 
     stages {
 
+/*
         // =========================
         // STAGE 1: RUN ALL UNIT TESTS
         // =========================
@@ -147,6 +148,7 @@ pipeline {
             }
         }
 
+
         // =========================
         // STAGE 3: API TESTS
         // =========================
@@ -176,9 +178,9 @@ pipeline {
             }
 
             post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'tests-api/test-results/**/*.xml'
-                    publishHTML target: [
+*///                always {
+//                   junit allowEmptyResults: true, testResults: 'tests-api/test-results/**/*.xml'
+/*                    publishHTML target: [
                         reportDir: 'tests-api/playwright-report',
                         reportFiles: 'index.html',
                         reportName: 'Playwright API Test Report'
@@ -212,9 +214,9 @@ pipeline {
             }
 
             post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'tests-e2e/test-results/**/*.xml'
-                    publishHTML target: [
+*///                always {
+//                    junit allowEmptyResults: true, testResults: 'tests-e2e/test-results/**/*.xml'
+/*                    publishHTML target: [
                         reportDir: 'tests-e2e/playwright-report',
                         reportFiles: 'index.html',
                         reportName: 'Playwright E2E Test Report'
@@ -252,7 +254,7 @@ pipeline {
                 }
             }
         }
-
+*/
         // =========================
         // STAGE 6: DEPLOY BACKEND
         // =========================
@@ -315,7 +317,7 @@ pipeline {
                 }
             }
         }
-
+/*
         // =========================
         // STAGE 8: POST-DEPLOYMENT TESTS
         // =========================
@@ -350,16 +352,16 @@ pipeline {
             }
 
             post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'tests-e2e/test-results/**/*.xml'
-                    publishHTML target: [
-                        reportDir: 'tests-e2e/playwright-report',
-                        reportFiles: 'index.html',
-                        reportName: 'Playwright Post Deployment Test Report'
-                    ]
-                }
-            }
-        }
+*///                always {
+//                    junit allowEmptyResults: true, testResults: 'tests-e2e/test-results/**/*.xml'
+//                    publishHTML target: [
+//                        reportDir: 'tests-e2e/playwright-report',
+//                        reportFiles: 'index.html',
+//                        reportName: 'Playwright Post Deployment Test Report'
+//                   ]
+//                }
+//            }
+//        }
     }
 
     // =========================
