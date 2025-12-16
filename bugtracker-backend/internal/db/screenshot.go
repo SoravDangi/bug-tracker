@@ -2,7 +2,7 @@ package db
 
 import (
 	"encoding/json"
-	
+	"fmt"
 
 	"bugtracker-backend/internal/models"
 
@@ -74,4 +74,27 @@ func DeleteScreenshotsByBugID(bugID int) error {
 		}
 		return nil
 	})
+}
+func GetScreenshot(id int) (*models.Screenshot, error) {
+	var screenshot models.Screenshot
+
+	err := db.View(func(tx *bbolt.Tx) error {
+		sb := tx.Bucket(screenshotsBucket)
+		if sb == nil {
+			return fmt.Errorf("screenshots bucket not found")
+		}
+
+		data := sb.Get(itob(id))
+		if data == nil {
+			return fmt.Errorf("screenshot not found")
+		}
+
+		return json.Unmarshal(data, &screenshot)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &screenshot, nil
 }
