@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getBugLinks, addBugLink } from "@/api/bugLinks";
+import { getBugLinks, addBugLink } from "@/api/buglink";
 
 export default function BugLinksSection({ bugId }: { bugId: number }) {
   const [links, setLinks] = useState<any[]>([]);
