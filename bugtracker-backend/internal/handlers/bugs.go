@@ -15,27 +15,28 @@ import (
 )
 
 func RegisterRoutes(r *mux.Router) {
-	r.HandleFunc("/bugs", CreateBug).Methods("POST")
-	r.HandleFunc("/bugs", GetBugs).Methods("GET")
-	r.HandleFunc("/bugs", DeleteAllBugs).Methods("DELETE")
-	r.HandleFunc("/bugs/{id}", GetBug).Methods("GET")
-	r.HandleFunc("/bugs/{id}", UpdateBug).Methods("PUT")
-	r.HandleFunc("/bugs/{id}", DeleteBug).Methods("DELETE")
+	api := r.PathPrefix("/api").Subrouter()
 
-	r.HandleFunc("/bugs/{id}/screenshots", UploadScreenshot).Methods("POST")
-    r.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET")
-    r.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE")
-       
-	// ✅ CORRECT
-    r.HandleFunc("/bugs/{id}/links", GetBugLinks).Methods("GET")
-	r.HandleFunc("/bugs/{id}/links", CreateBugLink).Methods("POST")
-	r.HandleFunc("/bugs/links/{id}", DeleteBugLink).Methods("DELETE")
+	// Bugs
+	api.HandleFunc("/bugs", CreateBug).Methods("POST")
+	api.HandleFunc("/bugs", GetBugs).Methods("GET")
+	api.HandleFunc("/bugs", DeleteAllBugs).Methods("DELETE")
+	api.HandleFunc("/bugs/{id}", GetBug).Methods("GET")
+	api.HandleFunc("/bugs/{id}", UpdateBug).Methods("PUT")
+	api.HandleFunc("/bugs/{id}", DeleteBug).Methods("DELETE")
 
+	// Screenshots
+	api.HandleFunc("/bugs/{id}/screenshots", UploadScreenshot).Methods("POST")
+	api.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET")
+	api.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE")
 
+	// ✅ Bug links (THIS FIXES 404)
+	api.HandleFunc("/bugs/{id}/links", GetBugLinks).Methods("GET")
+	api.HandleFunc("/bugs/{id}/links", CreateBugLink).Methods("POST")
+	api.HandleFunc("/bugs/links/{id}", DeleteBugLink).Methods("DELETE")
 
-
-
-	RegisterCommentRoutes(r)
+	// Comments
+	RegisterCommentRoutes(api)
 }
 
 func CreateBug(w http.ResponseWriter, r *http.Request) {
