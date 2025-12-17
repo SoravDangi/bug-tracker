@@ -2,31 +2,28 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"bugtracker-backend/internal/models"
 	"go.etcd.io/bbolt"
 )
 
-func CreateBugLink(link *models.BugLink) error {
-	return db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket(bugLinksBucket)
-		id := btoi(b.Get([]byte("lastID"))) + 1
-		b.Put([]byte("lastID"), itob(id))
-
-		link.ID = id
-		data, _ := json.Marshal(link)
-		return b.Put(itob(id), data)
-	})
-}
-
-func GetBugLinks(bugID int) ([]models.BugLink, error) {
-	var links []models.BugLink
+func GetBugLinksByBugID(bugID int) ([]*models.BugLink, error) {
+	var links []*models.BugLink
 
 	err := db.View(func(tx *bbolt.Tx) error {
-		return tx.Bucket(bugLinksBucket).ForEach(func(_, v []byte) error {
-			var l models.BugLink
-			json.Unmarshal(v, &l)
-			if l.BugID == bugID {
-				links = append(links, l)
+		b := tx.Bucket(bugLinksBucket)
+		if b == nil {
+			return nil
+		}
+
+		return b.ForEach(func(_, v []byte) error {
+			var link models.BugLink
+			if err := json.Unmarshal(v, &link); err != nil {
+				return err
+			}
+			if link.BugID == bugID {
+				links = append(links, &link)
 			}
 			return nil
 		})
@@ -35,26 +32,55 @@ func GetBugLinks(bugID int) ([]models.BugLink, error) {
 	return links, err
 }
 
+func CreateBugLink(link *models.BugLink) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bugLinksBucket)
+		if b == nil {
+			return fmt.Errorf("bug links bucket not found")
+		}
+
+		data, err := json.Marshal(link)
+		if err != nil {
+			return err
+		}
+
+		return b.Put(itob(link.ID), data)
+	})
+}
+
+func DeleteBugLink(id int) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bugLinksBucket)
+		if b == nil {
+			return nil
+		}
+		return b.Delete(itob(id))
+	})
+}
+
 func DeleteBugLinksByBugID(bugID int) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bugLinksBucket)
-		var keys [][]byte
+		if b == nil {
+			return nil
+		}
 
-		b.ForEach(func(k, v []byte) error {
+		var toDelete [][]byte
+
+		_ = b.ForEach(func(k, v []byte) error {
 			var link models.BugLink
-			if err := json.Unmarshal(v, &link); err != nil {
-				return nil
-			}
-			if link.BugID == bugID {
-				keys = append(keys, k)
+			if err := json.Unmarshal(v, &link); err == nil {
+				if link.BugID == bugID {
+					toDelete = append(toDelete, k)
+				}
 			}
 			return nil
 		})
 
-		for _, k := range keys {
+		for _, k := range toDelete {
 			_ = b.Delete(k)
 		}
+
 		return nil
 	})
 }
-
