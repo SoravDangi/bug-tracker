@@ -38,20 +38,23 @@ func GetBugLinks(bugID int) ([]models.BugLink, error) {
 func DeleteBugLinksByBugID(bugID int) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bugLinksBucket)
-		var del [][]byte
+		var keys [][]byte
 
 		b.ForEach(func(k, v []byte) error {
-			var l models.BugLink
-			json.Unmarshal(v, &l)
-			if l.BugID == bugID {
-				del = append(del, k)
+			var link models.BugLink
+			if err := json.Unmarshal(v, &link); err != nil {
+				return nil
+			}
+			if link.BugID == bugID {
+				keys = append(keys, k)
 			}
 			return nil
 		})
 
-		for _, k := range del {
-			b.Delete(k)
+		for _, k := range keys {
+			_ = b.Delete(k)
 		}
 		return nil
 	})
 }
+

@@ -35,6 +35,30 @@ func CreateComment(bugID string, comment *models.Comment) error {
 	})
 }
 
+func DeleteCommentsByBugID(bugID int) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(commentsBucket)
+		var keysToDelete [][]byte
+
+		b.ForEach(func(k, v []byte) error {
+			var c models.Comment
+			if err := json.Unmarshal(v, &c); err != nil {
+				return nil
+			}
+			if c.BugID == bugID {
+				keysToDelete = append(keysToDelete, k)
+			}
+			return nil
+		})
+
+		for _, k := range keysToDelete {
+			_ = b.Delete(k)
+		}
+		return nil
+	})
+}
+
+
 func GetComments(bugID string) ([]models.Comment, error) {
 	var comments []models.Comment
 	bugIDInt, err := strconv.Atoi(bugID)
