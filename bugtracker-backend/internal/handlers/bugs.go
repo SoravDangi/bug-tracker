@@ -25,6 +25,9 @@ func RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/bugs/{id}/screenshots", UploadScreenshot).Methods("POST")
     r.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET")
     r.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE")
+       
+	r.HandleFunc("/bugs/{id}/links", GetBugLinks).Methods("GET")
+	r.HandleFunc("/bugs/{id}/links", CreateBugLink).Methods("POST")
 
 
 
@@ -183,10 +186,9 @@ func UpdateBug(w http.ResponseWriter, r *http.Request) {
 func DeleteBug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := mux.Vars(r)["id"]
 
-	idInt, err := strconv.Atoi(id)
+	idInt, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{
@@ -195,7 +197,7 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Fetch screenshots for this bug
+	// 1️⃣ Fetch screenshots
 	screenshots, err := db.GetScreenshotsByBugID(idInt)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -205,12 +207,12 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Delete screenshot files from disk
+	// 2️⃣ Delete screenshot files
 	for _, s := range screenshots {
 		_ = os.Remove(s.FilePath)
 	}
 
-	// 3. Delete screenshot records
+	// 3️⃣ Delete screenshot records
 	if err := db.DeleteScreenshotsByBugID(idInt); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{
@@ -219,7 +221,13 @@ func DeleteBug(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Delete bug
+	// 4️⃣ Delete comments
+	_ = db.DeleteCommentsByBugID(idInt)
+
+	// 5️⃣ Delete bug links
+	_ = db.DeleteBugLinksByBugID(idInt)
+
+	// 6️⃣ Delete bug
 	if err := db.DeleteBug(idInt); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{

@@ -20,6 +20,12 @@ var (
 	bugsBucket     = []byte("bugs")
 	commentsBucket = []byte("comments")
 	counterBucket  = []byte("counter")
+    
+
+    // bug link bucket
+	bugLinksBucket = []byte("bug_links")
+
+     
 
 	// Screenshot buckets
 	screenshotsBucket       = []byte("screenshots")
@@ -80,6 +86,10 @@ func Init() error {
 				return fmt.Errorf("init screenshot counter: %w", err)
 			}
 		}
+		if _, err := tx.CreateBucketIfNotExists(bugLinksBucket); err != nil {
+	        return fmt.Errorf("create bug links bucket: %w", err) 
+        }
+
 
 		return nil
 	})
@@ -243,6 +253,7 @@ func CleanupTestDB() error {
 		_ = tx.DeleteBucket(counterBucket)
 		_ = tx.DeleteBucket(screenshotsBucket)
 		_ = tx.DeleteBucket(screenshotCounterBucket)
+		_ = tx.DeleteBucket(bugLinksBucket)
 
 		// Recreate buckets
 		if _, err := tx.CreateBucket(bugsBucket); err != nil {
@@ -271,6 +282,9 @@ func CleanupTestDB() error {
 		if err := sCounter.Put([]byte("lastScreenshotID"), itob(0)); err != nil {
 			return err
 		}
+		if _, err := tx.CreateBucket(bugLinksBucket); err != nil {
+	        return err
+        }
 
 		return nil
 	})
