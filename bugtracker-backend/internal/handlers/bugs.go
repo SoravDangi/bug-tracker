@@ -26,9 +26,11 @@ func RegisterRoutes(r *mux.Router) {
     r.HandleFunc("/bugs/{id}/screenshots", GetScreenshots).Methods("GET")
     r.HandleFunc("/screenshots/{id}", DeleteScreenshot).Methods("DELETE")
        
-	r.HandleFunc("/api/bugs/{id}/links", GetBugLinks).Methods("GET")
-    r.HandleFunc("/api/bugs/{id}/links", CreateBugLink).Methods("POST")
-    r.HandleFunc("/api/bug-links/{id}", DeleteBugLink).Methods("DELETE")
+	// ✅ CORRECT
+    r.HandleFunc("/bugs/{id}/links", GetBugLinks).Methods("GET")
+	r.HandleFunc("/bugs/{id}/links", CreateBugLink).Methods("POST")
+	r.HandleFunc("/bugs/links/{id}", DeleteBugLink).Methods("DELETE")
+
 
 
 

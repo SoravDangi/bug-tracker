@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { getBugLinks, addBugLink } from "@/api/buglink";
+import { getBugLinks, createBugLink } from "@/api/buglink";
+
+interface BugLink {
+  id: number;
+  title: string;
+  url: string;
+}
 
 export default function BugLinksSection({ bugId }: { bugId: number }) {
-  const [links, setLinks] = useState<any[]>([]);
+  const [links, setLinks] = useState<BugLink[]>([]);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
 
@@ -17,7 +23,9 @@ export default function BugLinksSection({ bugId }: { bugId: number }) {
 
   const submit = async () => {
     if (!title || !url) return;
-    await addBugLink(bugId, { title, url });
+
+    await createBugLink(bugId, title, url);
+
     setTitle("");
     setUrl("");
     load();
@@ -33,12 +41,14 @@ export default function BugLinksSection({ bugId }: { bugId: number }) {
         onChange={(e) => setTitle(e.target.value)}
         className="border p-2 mr-2 rounded"
       />
+
       <input
         placeholder="https://..."
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         className="border p-2 mr-2 rounded w-96"
       />
+
       <button
         onClick={submit}
         className="bg-blue-500 text-white px-3 py-2 rounded"
