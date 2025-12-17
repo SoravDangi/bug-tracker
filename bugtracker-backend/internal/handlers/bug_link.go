@@ -61,7 +61,7 @@ func CreateBugLink(w http.ResponseWriter, r *http.Request) {
 		BugID:     bugID,
 		Title:     body.Title,
 		URL:       body.URL,
-		CreatedAt: time.Now(),
+		
 	}
 
 	if err := db.CreateBugLink(link); err != nil {
