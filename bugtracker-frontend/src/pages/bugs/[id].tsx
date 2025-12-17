@@ -10,6 +10,7 @@ import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import { deleteBug } from "@/api/bugs";
 import { API_BASE_URL } from "@/config";
 import ScreenshotSection from "@/components/screenshotsection";
+import BugLinksSection from "@/components/buglinksection";
 
 
 export default function BugDetail() {
@@ -169,6 +170,7 @@ export default function BugDetail() {
 
           {bug && <ScreenshotSection bugId={bug.id} />}
 
+          {bug && <BugLinksSection bugId={bug.id} />}
 
           <CommentSection
             bugId={bug.id}
