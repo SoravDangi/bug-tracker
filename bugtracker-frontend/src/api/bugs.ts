@@ -1,4 +1,6 @@
 import { Bug } from "../types/bug";
+import { CreateBugPayload } from "../types/bug";
+
 
 if (!process.env.NEXT_PUBLIC_API_URL) {
   if (process.env.NODE_ENV === "test") {
@@ -43,7 +45,7 @@ export const getBugs = async (): Promise<Bug[]> => {
   }
 };
 
-export const createBug = async (bugData: Omit<Bug, "id">) => {
+export const createBug = async (bugData: CreateBugPayload) => {
   try {
     const response = await fetch(`${API_BASE_URL}${API_PATH}/bugs`, {
       method: "POST",

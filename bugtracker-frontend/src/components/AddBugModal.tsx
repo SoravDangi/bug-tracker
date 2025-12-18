@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Bug, Priority } from "@/types/bug";
+import { Priority, CreateBugPayload } from "@/types/bug";
 
 interface AddBugModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (bug: Omit<Bug, "id" | "status">) => void;
+  onSubmit: (bug: CreateBugPayload) => void;
 }
 
 const initialFormData = {
@@ -19,7 +19,7 @@ export default function AddBugModal({
   onSubmit,
 }: AddBugModalProps) {
   const [formData, setFormData] =
-    useState<Omit<Bug, "id" | "status">>(initialFormData);
+  useState<CreateBugPayload>(initialFormData);
 
   useEffect(() => {
     if (!isOpen) {

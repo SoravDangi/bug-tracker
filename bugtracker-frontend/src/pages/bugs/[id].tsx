@@ -115,9 +115,13 @@ export default function BugDetail() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-2xl font-bold">{bug.title}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                  🕒 Created on {formatDateTime(bug.created_at)}
-              </p>
+              {bug.created_at && (
+                <p className="text-sm text-gray-500 mt-2">
+                  🕒 Created on{" "}
+                  {new Date(bug.created_at).toLocaleString()}
+                </p>
+              )}
+
             </div>
             <div className="flex gap-4">
               <button
