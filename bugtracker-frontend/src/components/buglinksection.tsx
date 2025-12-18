@@ -78,8 +78,15 @@ export default function BugLinksSection({ bugId }: { bugId: number }) {
             >
               {l.title}
             </a>
+
+            {/* Delete button */}
             <button
-              onClick={() => remove(l.id)}
+              type="button"
+             onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation(); // 🔥 THIS IS THE KEY
+                remove(l.id);
+                }}
               className="text-red-600 border px-2 py-1 rounded hover:bg-red-100"
             >
               Delete
