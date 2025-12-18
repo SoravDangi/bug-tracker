@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getBugs, createBug, updateBug, deleteBug } from "../api/bugs";
 import AddBugModal from "./AddBugModal";
-import { Bug } from "../types/bug";
 import Link from "next/link";
 import EditBugModal from "./EditBugModal";
 import { useRouter } from "next/router";
@@ -9,6 +8,7 @@ import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import Notification from "./Notification";
 import { APP_VERSION } from "../config/app";
 import Image from "next/image";
+import { Bug, CreateBugPayload } from "@/types/bug";
 
 export default function BugList() {
   const router = useRouter();
@@ -36,24 +36,16 @@ export default function BugList() {
     fetchBugs();
   }, []);
 
-  const handleAddBug = async (newBug: Omit<Bug, "id" | "status">) => {
-    try {
-      const createdBug = await createBug({ ...newBug, status: "Open" });
-      const updatedBugs = await getBugs();
-      setBugs(updatedBugs);
-      setIsModalOpen(false);
-
-      replace({
-        pathname,
-        query: {
-          createdBugTitle: createdBug.title,
-          showCreateNotification: true,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to create bug:", error);
-    }
-  };
+ const handleAddBug = async (newBug: CreateBugPayload) => {
+  try {
+    await createBug(newBug);
+    const updatedBugs = await getBugs();
+    setBugs(updatedBugs);
+    setIsModalOpen(false);
+  } catch (error) {
+    console.error("Failed to add bug:", error);
+  }
+};
 
   const handleEditClick = (bug: Bug) => {
     setSelectedBug(bug);
