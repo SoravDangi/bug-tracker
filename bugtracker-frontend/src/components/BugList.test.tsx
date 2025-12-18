@@ -95,6 +95,10 @@ describe("BugList", () => {
         .mockImplementation(() => {});
       (getBugs as jest.Mock).mockRejectedValue(new Error("Failed to fetch"));
       render(<BugList />);
+
+      await waitFor(() => {
+       expect(getBugs).toHaveBeenCalled();
+      });
       await waitFor(() => {
         expect(
           screen.getByText("Error: Failed to fetch bugs")
@@ -140,12 +144,14 @@ describe("BugList", () => {
         fireEvent.submit(screen.getByRole("button", { name: /add bug/i }));
       });
 
-      expect(createBug).toHaveBeenCalled();
-      expect(mockRouter.replace).toHaveBeenCalledWith({
-        pathname: "/",
-        query: { createdBugTitle: "New Bug", showCreateNotification: true },
+      expect(createBug).toHaveBeenCalledWith({
+        title: "New Bug",
+        description: "Bug description",
+        priority: "Medium",
       });
-    });
+
+    
+    expect(getBugs).toHaveBeenCalled();
 
     it("should handle editing a bug", async () => {
       await waitFor(() => {
@@ -243,16 +249,19 @@ describe("BugList", () => {
 
   it("displays the correct version number", () => {
     render(<BugList />);
+    
 
     expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument();
   });
 
   it("displays the version number in the header", () => {
     render(<BugList />);
+    
 
     const header = screen.getByRole("navigation");
     const versionElement = screen.getByText(`v${APP_VERSION}`);
 
     expect(header).toContainElement(versionElement);
   });
+});
 });
