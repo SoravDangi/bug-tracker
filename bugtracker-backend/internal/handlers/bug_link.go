@@ -74,17 +74,21 @@ func CreateBugLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteBugLink(w http.ResponseWriter, r *http.Request) {
-	idStr := mux.Vars(r)["id"]
-	linkID, err := strconv.Atoi(idStr)
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	linkID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.Error(w, "invalid link id", http.StatusBadRequest)
 		return
 	}
 
-	if err := db.DeleteBugLink(linkID); err != nil {
+	err = db.DeleteBugLink(linkID)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+

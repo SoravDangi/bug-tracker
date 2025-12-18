@@ -2,11 +2,18 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"bugtracker-backend/internal/models"
 	"go.etcd.io/bbolt"
 )
+
+/*
+Bucket stores:
+key   = link ID (auto-increment)
+value = BugLink JSON
+*/
 
 func GetBugLinksByBugID(bugID int) ([]*models.BugLink, error) {
 	var links []*models.BugLink
@@ -39,6 +46,13 @@ func CreateBugLink(link *models.BugLink) error {
 			return fmt.Errorf("bug links bucket not found")
 		}
 
+		// ✅ AUTO-INCREMENT ID
+		id, err := b.NextSequence()
+		if err != nil {
+			return err
+		}
+		link.ID = int(id)
+
 		data, err := json.Marshal(link)
 		if err != nil {
 			return err
@@ -52,8 +66,14 @@ func DeleteBugLink(id int) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bugLinksBucket)
 		if b == nil {
-			return nil
+			return errors.New("bug links bucket not found")
 		}
+
+		// ✅ CHECK existence (important)
+		if b.Get(itob(id)) == nil {
+			return errors.New("link not found")
+		}
+
 		return b.Delete(itob(id))
 	})
 }
