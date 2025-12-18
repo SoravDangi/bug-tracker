@@ -6,6 +6,9 @@ export interface Bug {
   description: string;
   status: 'Open' | 'In Progress' | 'Resolved';
   priority: Priority;
+  created_at: string;   // ✅ auto from backend
+  updated_at?: string;  
+
 }
 
 export interface BugActions {

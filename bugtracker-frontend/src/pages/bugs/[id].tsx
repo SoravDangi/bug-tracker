@@ -11,6 +11,8 @@ import { deleteBug } from "@/api/bugs";
 import { API_BASE_URL } from "@/config";
 import ScreenshotSection from "@/components/screenshotsection";
 import BugLinksSection from "@/components/buglinksection";
+import { formatDateTime } from "@/utils/formatDate";
+
 
 
 export default function BugDetail() {
@@ -22,6 +24,10 @@ export default function BugDetail() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const formatDateTime = (iso: string) =>
+  new Date(iso).toLocaleString();
+
 
   const fetchComments = useCallback(async () => {
     try {
@@ -107,7 +113,12 @@ export default function BugDetail() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white shadow-md rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">{bug.title}</h1>
+            <div>
+              <h1 className="text-2xl font-bold">{bug.title}</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                  🕒 Created on {formatDateTime(bug.created_at)}
+              </p>
+            </div>
             <div className="flex gap-4">
               <button
                 onClick={() => setIsEditModalOpen(true)}
