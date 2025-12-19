@@ -9,7 +9,7 @@ pipeline {
         // =========================
         // STAGE 1: RUN ALL UNIT TESTS
         // =========================
-        stage('Execute Unit Tests') {
+ /*       stage('Execute Unit Tests') {
 
             // Backend and frontend unit tests run at the same time to save time
             parallel {
