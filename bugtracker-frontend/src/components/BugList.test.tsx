@@ -251,14 +251,11 @@ describe("BugList", () => {
     render(<BugList />);
     
 
-    expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument();
+    expect(screen.getByTestId("app-version")).toHaveTextContent(
+      `v${APP_VERSION}`
+    );
   });
 
-  it("displays the version number in the header", () => {
-    render(<BugList />);
-    
-    expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument();
-    
-  });
+  
 });
 });
